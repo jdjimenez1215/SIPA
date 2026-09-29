@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>SIAU - Login</title>
+
+    <!-- ===== Hojas de estilo ===== -->
+    <!-- Bootstrap 3.3.7 (reset, .modal, .sr-only) -->
+    <link rel="stylesheet" href="assets/css/bootstrap.min.css">
+    <link rel="stylesheet" href="assets/css/font-awesome.min.css">
+    <link rel="stylesheet" href="assets/css/animate.min.css">
+    <!-- Estilos base de la plantilla -->
+    <link rel="stylesheet" href="assets/css/template.css">
+    <!-- Estilos propios de la vista de login -->
+    <link rel="stylesheet" href="assets/css/login.css">
+</head>
+
+<body class="login">
+    <!-- Layout de dos paneles. El reparto 2/3 - 1/3 y las alturas los
+         define .login-layout en login.css (flexbox). -->
+    <main class="login-layout">
+
+        <!-- ===== Panel izquierdo: imagen de la sede =====
+             El fondo se define por CSS en login.css -> .leftLogin.
+             Incluye un gradiente de respaldo por si la foto no carga. -->
+        <section class="leftLogin" role="img" aria-label="Sede de la Universidad de los Llanos"></section>
+
+        <!-- ===== Panel derecho: formulario de acceso ===== -->
+        <section class="rightLogin">
+            <div class="login_wrapper">
+                <div class="login_form animate">
+
+                    <!-- Logo institucional -->
+                    <div class="logoUnillanos">
+                        <img src="assets/img/logoUnillanos.png" alt="Universidad de los Llanos">
+                    </div>
+
+                    <section class="login_content">
+
+                        <h1 class="titulo animated flipInY">
+                            <i class="fa fa-users" aria-hidden="true"></i> SIAU
+                        </h1>
+
+                        <!-- ===== Formulario de login =====
+                             onsubmit cancela el envío nativo, así la página nunca se recarga.
+                             ACÁ CONECTA EL DESARROLLADOR: leer #username y #password,
+                             llamar a la API y mostrar el resultado en #response. -->
+                        <form id="login-form" name="login-form" autocomplete="on" novalidate
+                            onsubmit="event.preventDefault();">
+
+                            <section id="login-wrapper" class="NoMarPadTopBottom">
+                                <div class="form-group">
+                                    <label class="sr-only" for="username">Usuario</label>
+                                    <input type="text" class="form-control" id="username" name="username"
+                                        placeholder="Usuario" title="Nombre de usuario" value=""
+                                        autocomplete="username" maxlength="60" required
+                                        onkeyup="quitarEspacios(this)">
+                                    <i class="fa fa-user" aria-hidden="true"></i>
+                                </div>
+
+                                <div class="form-group">
+                                    <label class="sr-only" for="password">Contraseña</label>
+                                    <input type="password" class="form-control" id="password" name="password"
+                                        placeholder="Contraseña" title="Contraseña"
+                                        autocomplete="current-password" maxlength="120" required>
+                                    <i class="fa fa-lock" aria-hidden="true"></i>
+                                </div>
+
+                        
+
+                            </section>
+
+                            <div class="reset-pwd">
+                                <button type="submit" id="btn-login" class="btn btn-primary submit">
+                                    Iniciar Sesión
+                                </button>
+                                <a id="recuperaPWD" href="#recuperaPWD">Recuperar contraseña</a>
+                            </div>
+
+                            <!-- ===== Espacio para futuros mensajes de error de la API =====
+                                 El JS escribe el texto aquí y quita la clase .is-hidden
+                                 para mostrarlo. -->
+                            <div id="response" class="login-feedback is-hidden" role="alert"
+                                aria-live="polite"></div>
+
+                            <div class="separator">
+                                <h2 class="separator-title">¿Olvidó su usuario?</h2>
+                                <h2 class="separator-title">
+                                    <a data-toggle="modal" href="#modalConsulta">¡Consúltelo aquí!</a>
+                                </h2>
+                            </div>
+
+                            <div class="separator">
+                                <p class="login-note">Nota: Las credenciales de acceso asignadas son de uso
+                                    personal e intransferible. El usuario se hace responsable de cualquier
+                                    acceso y uso de la información que se realice con su cuenta de usuario.</p>
+                                <p>© 2018 Todos los derechos reservados
+                                    <a class="alink" href="https://unillanos.edu.co/" target="_blank"
+                                        rel="noopener noreferrer">Universidad de los Llanos</a>
+                                </p>
+                                <a class="alink" target="_blank" rel="noopener noreferrer"
+                                    href="https://www.unillanos.edu.co/index.php/documentacion/consejo-superior-universitario/acuerdos/2025-6/8138-acuerdo-superior-no-007-de-2025/file">
+                                    Términos - Política de privacidad
+                                </a>
+                            </div>
+
+                        </form>
+                    </section>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- ===== Modal: consulta de usuario por documento ===== -->
+    <div class="modal fade" id="modalConsulta" tabindex="-1" role="dialog" aria-labelledby="tituloModalConsulta">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close modalBtnClose" data-dismiss="modal" aria-label="Cerrar">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                    <h4 class="modal-title" id="tituloModalConsulta">Consulte su usuario</h4>
+                </div>
+                <div class="modal-body">
+                    <form id="envio" novalidate>
+                        <h4>Ingrese el número de documento</h4>
+                        <label class="sr-only" for="documento">Número de documento</label>
+                        <input type="number" class="form-control" id="documento" name="documento"
+                            placeholder="Ingrese su documento" title="Número de documento" maxlength="20">
+                    </form>
+
+                    <!-- Espacio para la respuesta de la consulta de usuario -->
+                    <div id="respuesta" aria-live="polite"></div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn modalBtnPrimary" id="consultar">Consultar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== Scripts ===== -->
+    <script src="assets/js/jquery.min.js"></script>
+    <script src="assets/js/bootstrap.min.js"></script>
+    <script src="assets/js/legacy-app.js"></script>
+    <script src="assets/js/login.js"></script>
+
+    <!-- Lógica de la aplicación (autenticación). Se carga al final con
+         defer: se ejecuta después de analizar el documento. -->
+    <script src="assets/js/app.js" defer></script>
+</body>
+
+</html>
