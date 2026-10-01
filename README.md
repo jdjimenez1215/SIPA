@@ -186,6 +186,21 @@ docker compose down -v && docker compose up --build -d
 PORT=8080 bash scripts/e2e.sh   # termina con "TOTAL: N passed, M failed"
 ```
 
+### Colección de Postman
+
+`postman/` tiene las mismas pruebas como colección de Postman: 65 requests en 10 carpetas, con asserts en cada request y un chequeo global de que todo error sea `application/problem+json` con `code` y `traceId`.
+
+- **Postman:** importá `postman/MsInscripcion.postman_collection.json` y `postman/MsInscripcion.local.postman_environment.json`, elegí el environment *MsInscripcion - local* (ajustá `host` si usás otro puerto) y ejecutá la colección **en orden** con el Collection Runner, sobre la semilla limpia.
+- **Newman (CLI/CI):**
+
+```bash
+npx newman run postman/MsInscripcion.postman_collection.json \
+  -e postman/MsInscripcion.local.postman_environment.json \
+  --env-var host=http://localhost:8080
+```
+
+Las pruebas de concurrencia disparan dos `pm.sendRequest` en paralelo desde el script de tests, porque el Runner ejecuta los requests de uno en uno.
+
 ### Local con `dotnet run`
 
 Necesitás una PostgreSQL accesible con la cadena de `appsettings.json` (por defecto `localhost:5432`, base `inscripcion`, `postgres`/`postgres`). Por ejemplo, solo la base con Docker:
