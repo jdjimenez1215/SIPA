@@ -1,0 +1,1738 @@
+{
+  "info": {
+    "_postman_id": "2de977fb-666f-49be-91e7-91f0c2863ede",
+    "name": "MsInscripcion - E2E",
+    "description": "Pruebas E2E de los 20 endpoints del microservicio de inscripción (equivalente a scripts/e2e.sh).\n\n**Requisitos:** semilla limpia, porque cada paso modifica el estado: `docker compose down -v && docker compose up --build -d`.\n\n**Ejecutar en orden** con el Collection Runner o con Newman:\n`npx newman run postman/MsInscripcion.postman_collection.json -e postman/MsInscripcion.local.postman_environment.json`\n\nCambiá `host` en el environment si la API no corre en el puerto 8080 (por ejemplo `API_PORT=8081`).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "event": [
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Every error must follow the ProblemDetails contract (RFC 7807) with code + traceId.",
+          "if (pm.response.code >= 400) {",
+          "  pm.test(\"error en formato ProblemDetails\", () => {",
+          "    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/problem+json\");",
+          "    const body = pm.response.json();",
+          "    pm.expect(body).to.have.property(\"code\");",
+          "    pm.expect(body).to.have.property(\"traceId\");",
+          "  });",
+          "}"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "host",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "baseUrl",
+      "value": "{{host}}/api"
+    },
+    {
+      "key": "carreraId",
+      "value": ""
+    },
+    {
+      "key": "materiaId",
+      "value": ""
+    },
+    {
+      "key": "horarioId",
+      "value": ""
+    },
+    {
+      "key": "materiaTmpId",
+      "value": ""
+    },
+    {
+      "key": "raceWinnerId",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "01 Carreras",
+      "item": [
+        {
+          "name": "Listar carreras",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"contiene \\\"codigo\\\":\\\"ING-SIS\\\"\", () => pm.expect(pm.response.text()).to.include(\"\\\"codigo\\\":\\\"ING-SIS\\\"\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/carreras"
+          }
+        },
+        {
+          "name": "Carrera por id",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"contiene \\\"codigo\\\":\\\"ING-SIS\\\"\", () => pm.expect(pm.response.text()).to.include(\"\\\"codigo\\\":\\\"ING-SIS\\\"\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/carreras/1"
+          }
+        },
+        {
+          "name": "Carrera inexistente → 404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"contiene CARRERA_NO_ENCONTRADA\", () => pm.expect(pm.response.text()).to.include(\"CARRERA_NO_ENCONTRADA\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/carreras/999"
+          }
+        },
+        {
+          "name": "Crear carrera",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\", () => pm.response.to.have.status(201));",
+                  "pm.test(\"contiene \\\"codigo\\\":\\\"MED\\\"\", () => pm.expect(pm.response.text()).to.include(\"\\\"codigo\\\":\\\"MED\\\"\"));",
+                  "pm.collectionVariables.set(\"carreraId\", pm.response.json().id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/carreras",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"codigo\": \"MED\",\n  \"nombre\": \"Medicina\",\n  \"duracionSemestres\": 12\n}"
+            }
+          }
+        },
+        {
+          "name": "Crear carrera con código duplicado → 409",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 409\", () => pm.response.to.have.status(409));",
+                  "pm.test(\"contiene CODIGO_DUPLICADO\", () => pm.expect(pm.response.text()).to.include(\"CODIGO_DUPLICADO\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/carreras",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"codigo\": \"MED\",\n  \"nombre\": \"Otra\",\n  \"duracionSemestres\": 10\n}"
+            }
+          }
+        },
+        {
+          "name": "Crear carrera inválida → 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"contiene VALIDACION_FALLIDA\", () => pm.expect(pm.response.text()).to.include(\"VALIDACION_FALLIDA\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/carreras",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"codigo\": \"\",\n  \"nombre\": \"\",\n  \"duracionSemestres\": 0\n}"
+            }
+          }
+        },
+        {
+          "name": "Actualizar carrera",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"contiene \\\"nombre\\\":\\\"Medicina Humana\\\"\", () => pm.expect(pm.response.text()).to.include(\"\\\"nombre\\\":\\\"Medicina Humana\\\"\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/carreras/{{carreraId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"codigo\": \"MED\",\n  \"nombre\": \"Medicina Humana\",\n  \"duracionSemestres\": 12\n}"
+            }
+          }
+        },
+        {
+          "name": "Actualizar carrera inexistente → 404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"contiene CARRERA_NO_ENCONTRADA\", () => pm.expect(pm.response.text()).to.include(\"CARRERA_NO_ENCONTRADA\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/carreras/999",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"codigo\": \"XXX\",\n  \"nombre\": \"X\",\n  \"duracionSemestres\": 10\n}"
+            }
+          }
+        },
+        {
+          "name": "Borrar carrera en uso → 409",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 409\", () => pm.response.to.have.status(409));",
+                  "pm.test(\"contiene ENTIDAD_EN_USO\", () => pm.expect(pm.response.text()).to.include(\"ENTIDAD_EN_USO\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/carreras/1"
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 Materias",
+      "item": [
+        {
+          "name": "Catálogo completo",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"contiene \\\"codigo\\\":\\\"MAT101\\\"\", () => pm.expect(pm.response.text()).to.include(\"\\\"codigo\\\":\\\"MAT101\\\"\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/materias"
+          }
+        },
+        {
+          "name": "Catálogo filtrado por carrera y semestre",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"contiene \\\"codigo\\\":\\\"MAT101\\\"\", () => pm.expect(pm.response.text()).to.include(\"\\\"codigo\\\":\\\"MAT101\\\"\"));",
+                  "pm.test(\"no contiene \\\"codigo\\\":\\\"ADM101\\\"\", () => pm.expect(pm.response.text()).to.not.include(\"\\\"codigo\\\":\\\"ADM101\\\"\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/materias?carreraId=1&semestre=1"
+          }
+        },
+        {
+          "name": "Catálogo con query inválida → 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"contiene VALIDACION_FALLIDA\", () => pm.expect(pm.response.text()).to.include(\"VALIDACION_FALLIDA\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/materias?semestre=abc"
+          }
+        },
+        {
+          "name": "Materia por id (con horarios)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"contiene \\\"horarios\\\":[\", () => pm.expect(pm.response.text()).to.include(\"\\\"horarios\\\":[\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/materias/1"
+          }
+        },
+        {
+          "name": "Materia inexistente → 404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"contiene MATERIA_NO_ENCONTRADA\", () => pm.expect(pm.response.text()).to.include(\"MATERIA_NO_ENCONTRADA\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/materias/999"
+          }
+        },
+        {
+          "name": "Crear materia (cupo 1)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\", () => pm.response.to.have.status(201));",
+                  "pm.test(\"contiene \\\"codigo\\\":\\\"TST101\\\"\", () => pm.expect(pm.response.text()).to.include(\"\\\"codigo\\\":\\\"TST101\\\"\"));",
+                  "pm.collectionVariables.set(\"materiaId\", pm.response.json().id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/materias",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"codigo\": \"TST101\",\n  \"nombre\": \"Materia de prueba\",\n  \"creditos\": 2,\n  \"carreraId\": 1,\n  \"semestre\": 1,\n  \"cuposMaximos\": 1\n}"
+            },
+            "description": "Materia de prueba con cupo 1, usada después en la carrera por el último cupo."
+          }
+        },
+        {
+          "name": "Crear materia con código duplicado → 409",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 409\", () => pm.response.to.have.status(409));",
+                  "pm.test(\"contiene CODIGO_DUPLICADO\", () => pm.expect(pm.response.text()).to.include(\"CODIGO_DUPLICADO\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/materias",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"codigo\": \"TST101\",\n  \"nombre\": \"Dup\",\n  \"creditos\": 2,\n  \"carreraId\": 1,\n  \"semestre\": 1,\n  \"cuposMaximos\": 5\n}"
+            }
+          }
+        },
+        {
+          "name": "Crear materia con carrera inexistente → 404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"contiene CARRERA_NO_ENCONTRADA\", () => pm.expect(pm.response.text()).to.include(\"CARRERA_NO_ENCONTRADA\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/materias",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"codigo\": \"TST999\",\n  \"nombre\": \"Materia de prueba\",\n  \"creditos\": 2,\n  \"carreraId\": 999,\n  \"semestre\": 1,\n  \"cuposMaximos\": 1\n}"
+            }
+          }
+        },
+        {
+          "name": "Actualizar materia",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"contiene \\\"nombre\\\":\\\"Materia de prueba E2E\\\"\", () => pm.expect(pm.response.text()).to.include(\"\\\"nombre\\\":\\\"Materia de prueba E2E\\\"\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/materias/{{materiaId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"codigo\": \"TST101\",\n  \"nombre\": \"Materia de prueba E2E\",\n  \"creditos\": 2,\n  \"carreraId\": 1,\n  \"semestre\": 1,\n  \"cuposMaximos\": 1\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 Horarios",
+      "item": [
+        {
+          "name": "Horarios de materia nueva (vacío)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"contiene []\", () => pm.expect(pm.response.text()).to.include(\"[]\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/materias/{{materiaId}}/horarios"
+          }
+        },
+        {
+          "name": "Crear horario",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\", () => pm.response.to.have.status(201));",
+                  "pm.test(\"contiene \\\"horaInicio\\\":\\\"08:00\\\"\", () => pm.expect(pm.response.text()).to.include(\"\\\"horaInicio\\\":\\\"08:00\\\"\"));",
+                  "pm.collectionVariables.set(\"horarioId\", pm.response.json().id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/materias/{{materiaId}}/horarios",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"diaSemana\": \"Sabado\",\n  \"horaInicio\": \"08:00\",\n  \"horaFin\": \"10:00\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Horario con rango invertido → 422",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 422\", () => pm.response.to.have.status(422));",
+                  "pm.test(\"contiene HORARIO_INVALIDO\", () => pm.expect(pm.response.text()).to.include(\"HORARIO_INVALIDO\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/materias/{{materiaId}}/horarios",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"diaSemana\": \"Sabado\",\n  \"horaInicio\": \"10:00\",\n  \"horaFin\": \"08:00\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Horario solapado con bloque propio → 422",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 422\", () => pm.response.to.have.status(422));",
+                  "pm.test(\"contiene HORARIO_INVALIDO\", () => pm.expect(pm.response.text()).to.include(\"HORARIO_INVALIDO\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/materias/{{materiaId}}/horarios",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"diaSemana\": \"Sabado\",\n  \"horaInicio\": \"09:00\",\n  \"horaFin\": \"11:00\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Actualizar horario",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"contiene \\\"horaInicio\\\":\\\"07:00\\\"\", () => pm.expect(pm.response.text()).to.include(\"\\\"horaInicio\\\":\\\"07:00\\\"\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/materias/{{materiaId}}/horarios/{{horarioId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"diaSemana\": \"Sabado\",\n  \"horaInicio\": \"07:00\",\n  \"horaFin\": \"09:00\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Horario en materia inexistente → 404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"contiene MATERIA_NO_ENCONTRADA\", () => pm.expect(pm.response.text()).to.include(\"MATERIA_NO_ENCONTRADA\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/materias/999/horarios",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"diaSemana\": \"Lunes\",\n  \"horaInicio\": \"08:00\",\n  \"horaFin\": \"10:00\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Borrar horario inexistente → 404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"contiene HORARIO_NO_ENCONTRADO\", () => pm.expect(pm.response.text()).to.include(\"HORARIO_NO_ENCONTRADO\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/materias/{{materiaId}}/horarios/999"
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 Prerrequisitos",
+      "item": [
+        {
+          "name": "Prerrequisitos de EDD301",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"contiene \\\"materiaRequisitoId\\\":7\", () => pm.expect(pm.response.text()).to.include(\"\\\"materiaRequisitoId\\\":7\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/materias/10/prerrequisitos"
+          }
+        },
+        {
+          "name": "Agregar prerrequisito",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\", () => pm.response.to.have.status(201));",
+                  "pm.test(\"contiene \\\"materiaRequisitoId\\\":1\", () => pm.expect(pm.response.text()).to.include(\"\\\"materiaRequisitoId\\\":1\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/materias/{{materiaId}}/prerrequisitos",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"materiaRequisitoId\": 1\n}"
+            }
+          }
+        },
+        {
+          "name": "Prerrequisito duplicado → 409",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 409\", () => pm.response.to.have.status(409));",
+                  "pm.test(\"contiene PRERREQUISITO_DUPLICADO\", () => pm.expect(pm.response.text()).to.include(\"PRERREQUISITO_DUPLICADO\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/materias/{{materiaId}}/prerrequisitos",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"materiaRequisitoId\": 1\n}"
+            }
+          }
+        },
+        {
+          "name": "Prerrequisito de sí misma → 422",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 422\", () => pm.response.to.have.status(422));",
+                  "pm.test(\"contiene PRERREQUISITO_CICLICO\", () => pm.expect(pm.response.text()).to.include(\"PRERREQUISITO_CICLICO\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/materias/{{materiaId}}/prerrequisitos",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"materiaRequisitoId\": {{materiaId}}\n}"
+            }
+          }
+        },
+        {
+          "name": "Prerrequisito cíclico → 422",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 422\", () => pm.response.to.have.status(422));",
+                  "pm.test(\"contiene PRERREQUISITO_CICLICO\", () => pm.expect(pm.response.text()).to.include(\"PRERREQUISITO_CICLICO\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/materias/1/prerrequisitos",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"materiaRequisitoId\": {{materiaId}}\n}"
+            },
+            "description": "TST101 ya requiere MAT101; hacer que MAT101 requiera TST101 cierra un ciclo."
+          }
+        },
+        {
+          "name": "Quitar prerrequisito",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 204\", () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/materias/{{materiaId}}/prerrequisitos/1"
+          }
+        },
+        {
+          "name": "Quitar prerrequisito inexistente → 404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"contiene PRERREQUISITO_NO_ENCONTRADO\", () => pm.expect(pm.response.text()).to.include(\"PRERREQUISITO_NO_ENCONTRADO\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/materias/{{materiaId}}/prerrequisitos/1"
+          }
+        }
+      ]
+    },
+    {
+      "name": "05 Estudiantes",
+      "item": [
+        {
+          "name": "Inscripciones de Ana en 2026-2",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"contiene \\\"codigo\\\":\\\"ETI101\\\"\", () => pm.expect(pm.response.text()).to.include(\"\\\"codigo\\\":\\\"ETI101\\\"\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/estudiantes/1/inscripciones?periodo=2026-2"
+          }
+        },
+        {
+          "name": "Inscripciones con periodo por defecto",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"contiene \\\"codigo\\\":\\\"ETI101\\\"\", () => pm.expect(pm.response.text()).to.include(\"\\\"codigo\\\":\\\"ETI101\\\"\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/estudiantes/1/inscripciones"
+          }
+        },
+        {
+          "name": "Inscripciones de estudiante inexistente → 404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"contiene ESTUDIANTE_NO_ENCONTRADO\", () => pm.expect(pm.response.text()).to.include(\"ESTUDIANTE_NO_ENCONTRADO\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/estudiantes/999/inscripciones"
+          }
+        },
+        {
+          "name": "Materias disponibles para Ana",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"contiene \\\"codigo\\\":\\\"MAT201\\\"\", () => pm.expect(pm.response.text()).to.include(\"\\\"codigo\\\":\\\"MAT201\\\"\"));",
+                  "pm.test(\"no contiene \\\"id\\\":1,\\\"codigo\\\":\\\"MAT101\\\"\", () => pm.expect(pm.response.text()).to.not.include(\"\\\"id\\\":1,\\\"codigo\\\":\\\"MAT101\\\"\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/estudiantes/1/materias-disponibles"
+          }
+        },
+        {
+          "name": "Materias disponibles de estudiante inexistente → 404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"contiene ESTUDIANTE_NO_ENCONTRADO\", () => pm.expect(pm.response.text()).to.include(\"ESTUDIANTE_NO_ENCONTRADO\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/estudiantes/999/materias-disponibles"
+          }
+        }
+      ]
+    },
+    {
+      "name": "06 Inscripciones - reglas y validaciones",
+      "item": [
+        {
+          "name": "Todas las violaciones a la vez → 422 (7)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 422\", () => pm.response.to.have.status(422));",
+                  "pm.test(\"contiene INSCRIPCION_RECHAZADA\", () => pm.expect(pm.response.text()).to.include(\"INSCRIPCION_RECHAZADA\"));",
+                  "const v = pm.response.json().violations || [];",
+                  "pm.test(\"exactamente 7 violaciones\", () => pm.expect(v).to.have.lengthOf(7));",
+                  "const byCode = Object.fromEntries(v.map(x => [x.materiaCodigo, x.code]));",
+                  "pm.test(\"cada materia con su violacion\", () => pm.expect(byCode).to.eql({",
+                  "  MAT101: \"MATERIA_YA_APROBADA\", MAT201: \"CRUCE_HORARIO\", ETI101: \"MATERIA_YA_INSCRITA\",",
+                  "  ALG201: \"CUPO_AGOTADO\", EDD301: \"PREREQUISITO_NO_CUMPLIDO\", ING601: \"SEMESTRE_EXCEDIDO\",",
+                  "  ADM101: \"CARRERA_NO_CORRESPONDE\"",
+                  "}));",
+                  "pm.test(\"FIS101 no tiene violaciones\", () => pm.expect(byCode).to.not.have.property(\"FIS101\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/inscripciones",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estudianteId\": 1,\n  \"periodo\": \"2026-2\",\n  \"materiaIds\": [1,2,6,4,9,10,11,12]\n}"
+            },
+            "description": "Una violación por materia problemática; FIS101 (reprobada) sí se puede recursar."
+          }
+        },
+        {
+          "name": "Cruce con materia ya inscrita (HUM101 vs ETI101) → 422",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 422\", () => pm.response.to.have.status(422));",
+                  "pm.test(\"contiene CRUCE_HORARIO\", () => pm.expect(pm.response.text()).to.include(\"CRUCE_HORARIO\"));",
+                  "pm.test(\"contiene \\\"conflictsWith\\\":\\\"ETI101\\\"\", () => pm.expect(pm.response.text()).to.include(\"\\\"conflictsWith\\\":\\\"ETI101\\\"\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/inscripciones",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estudianteId\": 1,\n  \"periodo\": \"2026-2\",\n  \"materiaIds\": [5]\n}"
+            }
+          }
+        },
+        {
+          "name": "Ids duplicados en la solicitud → 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"contiene MATERIA_DUPLICADA_EN_SOLICITUD\", () => pm.expect(pm.response.text()).to.include(\"MATERIA_DUPLICADA_EN_SOLICITUD\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/inscripciones",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estudianteId\": 1,\n  \"periodo\": \"2026-2\",\n  \"materiaIds\": [6,6]\n}"
+            }
+          }
+        },
+        {
+          "name": "Lista vacía → 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"contiene VALIDACION_FALLIDA\", () => pm.expect(pm.response.text()).to.include(\"VALIDACION_FALLIDA\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/inscripciones",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estudianteId\": 1,\n  \"periodo\": \"2026-2\",\n  \"materiaIds\": []\n}"
+            }
+          }
+        },
+        {
+          "name": "Periodo inválido → 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"contiene VALIDACION_FALLIDA\", () => pm.expect(pm.response.text()).to.include(\"VALIDACION_FALLIDA\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/inscripciones",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estudianteId\": 1,\n  \"periodo\": \"2026-9\",\n  \"materiaIds\": [6]\n}"
+            }
+          }
+        },
+        {
+          "name": "Estudiante inexistente → 404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"contiene ESTUDIANTE_NO_ENCONTRADO\", () => pm.expect(pm.response.text()).to.include(\"ESTUDIANTE_NO_ENCONTRADO\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/inscripciones",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estudianteId\": 999,\n  \"periodo\": \"2026-2\",\n  \"materiaIds\": [6]\n}"
+            }
+          }
+        },
+        {
+          "name": "Materia inexistente → 404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"contiene MATERIA_NO_ENCONTRADA\", () => pm.expect(pm.response.text()).to.include(\"MATERIA_NO_ENCONTRADA\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/inscripciones",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estudianteId\": 1,\n  \"periodo\": \"2026-2\",\n  \"materiaIds\": [999]\n}"
+            }
+          }
+        },
+        {
+          "name": "Atomicidad: una falla y no se inscribe ninguna → 422",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 422\", () => pm.response.to.have.status(422));",
+                  "pm.test(\"contiene MATERIA_YA_APROBADA\", () => pm.expect(pm.response.text()).to.include(\"MATERIA_YA_APROBADA\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/inscripciones",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estudianteId\": 1,\n  \"periodo\": \"2026-2\",\n  \"materiaIds\": [6,1]\n}"
+            }
+          }
+        },
+        {
+          "name": "Atomicidad: MAT201 no quedó inscrita",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"contiene \\\"codigo\\\":\\\"ETI101\\\"\", () => pm.expect(pm.response.text()).to.include(\"\\\"codigo\\\":\\\"ETI101\\\"\"));",
+                  "pm.test(\"no contiene \\\"codigo\\\":\\\"MAT201\\\"\", () => pm.expect(pm.response.text()).to.not.include(\"\\\"codigo\\\":\\\"MAT201\\\"\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/estudiantes/1/inscripciones?periodo=2026-2"
+          }
+        }
+      ]
+    },
+    {
+      "name": "07 Inscripciones - concurrencia",
+      "item": [
+        {
+          "name": "Mismo estudiante, materias que se cruzan (FIS101 ∥ MAT201)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "const base = pm.variables.replaceIn(\"{{baseUrl}}\");",
+                  "const post = (estudianteId, materiaIds) => ({",
+                  "  url: base + \"/inscripciones\", method: \"POST\",",
+                  "  header: { \"Content-Type\": \"application/json\" },",
+                  "  body: { mode: \"raw\", raw: JSON.stringify({ estudianteId, periodo: \"2026-2\", materiaIds }) }",
+                  "});",
+                  "const results = [];",
+                  "const done = () => {",
+                  "  if (results.length < 2) return;",
+                  "  const statuses = results.map(r => r.code).sort();",
+                  "  pm.test(\"una gana (201) y la otra pierde (422)\", () => pm.expect(statuses).to.eql([201, 422]));",
+                  "  const loser = results.find(r => r.code === 422);",
+                  "  pm.test(\"la perdedora reporta CRUCE_HORARIO\", () => pm.expect(loser && loser.text()).to.include(\"CRUCE_HORARIO\"));",
+                  "  const winner = results.find(r => r.code === 201);",
+                  "  if (winner) pm.collectionVariables.set(\"raceWinnerId\", winner.json()[0].id);",
+                  "};",
+                  "pm.sendRequest(post(1, [2]), (err, res) => { pm.test(\"request A sin error de red\", () => pm.expect(err).to.be.null); results.push(res); done(); });",
+                  "pm.sendRequest(post(1, [6]), (err, res) => { pm.test(\"request B sin error de red\", () => pm.expect(err).to.be.null); results.push(res); done(); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/estudiantes/1/inscripciones",
+            "description": "El request visible es solo un disparador: el script de tests manda dos POST en paralelo con pm.sendRequest. Sin el lock por estudiante, las dos pasarían."
+          }
+        },
+        {
+          "name": "Cancelar la inscripción ganadora",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 204\", () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/inscripciones/{{raceWinnerId}}"
+          }
+        },
+        {
+          "name": "Último cupo de TST101 (Ana ∥ Carlos)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "const base = pm.variables.replaceIn(\"{{baseUrl}}\");",
+                  "const post = (estudianteId, materiaIds) => ({",
+                  "  url: base + \"/inscripciones\", method: \"POST\",",
+                  "  header: { \"Content-Type\": \"application/json\" },",
+                  "  body: { mode: \"raw\", raw: JSON.stringify({ estudianteId, periodo: \"2026-2\", materiaIds }) }",
+                  "});",
+                  "const results = [];",
+                  "const done = () => {",
+                  "  if (results.length < 2) return;",
+                  "  const statuses = results.map(r => r.code).sort();",
+                  "  pm.test(\"una gana (201) y la otra pierde (422)\", () => pm.expect(statuses).to.eql([201, 422]));",
+                  "  const loser = results.find(r => r.code === 422);",
+                  "  pm.test(\"la perdedora reporta CUPO_AGOTADO\", () => pm.expect(loser && loser.text()).to.include(\"CUPO_AGOTADO\"));",
+                  "  const winner = results.find(r => r.code === 201);",
+                  "  if (winner) pm.collectionVariables.set(\"raceWinnerId\", winner.json()[0].id);",
+                  "};",
+                  "pm.sendRequest(post(1, [Number(pm.collectionVariables.get('materiaId'))]), (err, res) => { pm.test(\"request A sin error de red\", () => pm.expect(err).to.be.null); results.push(res); done(); });",
+                  "pm.sendRequest(post(2, [Number(pm.collectionVariables.get('materiaId'))]), (err, res) => { pm.test(\"request B sin error de red\", () => pm.expect(err).to.be.null); results.push(res); done(); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/materias/{{materiaId}}",
+            "description": "Dos estudiantes pelean el único cupo en paralelo: exactamente uno entra."
+          }
+        }
+      ],
+      "description": "Postman ejecuta los requests en secuencia; la concurrencia se logra con dos pm.sendRequest sin await."
+    },
+    {
+      "name": "08 Inscripciones - camino feliz y cancelación",
+      "item": [
+        {
+          "name": "Inscripción exitosa [MAT201, PRG201, EST201] → 201",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\", () => pm.response.to.have.status(201));",
+                  "pm.test(\"crea 3 inscripciones\", () => pm.expect(pm.response.json()).to.have.lengthOf(3));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/inscripciones",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estudianteId\": 1,\n  \"periodo\": \"2026-2\",\n  \"materiaIds\": [6,7,8]\n}"
+            }
+          }
+        },
+        {
+          "name": "Materia ya inscrita → 422",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 422\", () => pm.response.to.have.status(422));",
+                  "pm.test(\"contiene MATERIA_YA_INSCRITA\", () => pm.expect(pm.response.text()).to.include(\"MATERIA_YA_INSCRITA\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/inscripciones",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estudianteId\": 1,\n  \"periodo\": \"2026-2\",\n  \"materiaIds\": [6]\n}"
+            }
+          }
+        },
+        {
+          "name": "Cancelar inscripción de Carlos (ALG201)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 204\", () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/inscripciones/2"
+          }
+        },
+        {
+          "name": "Cancelar dos veces → 409",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 409\", () => pm.response.to.have.status(409));",
+                  "pm.test(\"contiene INSCRIPCION_YA_CANCELADA\", () => pm.expect(pm.response.text()).to.include(\"INSCRIPCION_YA_CANCELADA\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/inscripciones/2"
+          }
+        },
+        {
+          "name": "Cancelar inexistente → 404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"contiene INSCRIPCION_NO_ENCONTRADA\", () => pm.expect(pm.response.text()).to.include(\"INSCRIPCION_NO_ENCONTRADA\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/inscripciones/999"
+          }
+        },
+        {
+          "name": "Reinscribir después de cancelar (cupo liberado)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\", () => pm.response.to.have.status(201));",
+                  "pm.test(\"contiene \\\"materiaId\\\":9\", () => pm.expect(pm.response.text()).to.include(\"\\\"materiaId\\\":9\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/inscripciones",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estudianteId\": 2,\n  \"periodo\": \"2026-2\",\n  \"materiaIds\": [9]\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "09 Borrados",
+      "item": [
+        {
+          "name": "Borrar materia con inscripciones → 409",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 409\", () => pm.response.to.have.status(409));",
+                  "pm.test(\"contiene ENTIDAD_EN_USO\", () => pm.expect(pm.response.text()).to.include(\"ENTIDAD_EN_USO\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/materias/{{materiaId}}"
+          }
+        },
+        {
+          "name": "Borrar materia inexistente → 404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"contiene MATERIA_NO_ENCONTRADA\", () => pm.expect(pm.response.text()).to.include(\"MATERIA_NO_ENCONTRADA\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/materias/999"
+          }
+        },
+        {
+          "name": "Crear materia descartable",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\", () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set(\"materiaTmpId\", pm.response.json().id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/materias",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"codigo\": \"TMP101\",\n  \"nombre\": \"Temporal\",\n  \"creditos\": 1,\n  \"carreraId\": 1,\n  \"semestre\": 1,\n  \"cuposMaximos\": 5\n}"
+            }
+          }
+        },
+        {
+          "name": "Borrar materia libre",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 204\", () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/materias/{{materiaTmpId}}"
+          }
+        },
+        {
+          "name": "Borrar carrera libre",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 204\", () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/carreras/{{carreraId}}"
+          }
+        },
+        {
+          "name": "Carrera borrada ya no existe → 404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"contiene CARRERA_NO_ENCONTRADA\", () => pm.expect(pm.response.text()).to.include(\"CARRERA_NO_ENCONTRADA\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/carreras/{{carreraId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "10 Errores del framework (ProblemDetails)",
+      "item": [
+        {
+          "name": "Ruta inexistente → 404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"contiene RECURSO_NO_ENCONTRADO\", () => pm.expect(pm.response.text()).to.include(\"RECURSO_NO_ENCONTRADO\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/no-existe"
+          }
+        },
+        {
+          "name": "Método no permitido → 405",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 405\", () => pm.response.to.have.status(405));",
+                  "pm.test(\"contiene METODO_NO_PERMITIDO\", () => pm.expect(pm.response.text()).to.include(\"METODO_NO_PERMITIDO\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": "{{baseUrl}}/carreras"
+          }
+        },
+        {
+          "name": "Content-Type no soportado → 415",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 415\", () => pm.response.to.have.status(415));",
+                  "pm.test(\"contiene TIPO_CONTENIDO_NO_SOPORTADO\", () => pm.expect(pm.response.text()).to.include(\"TIPO_CONTENIDO_NO_SOPORTADO\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "text/plain"
+              }
+            ],
+            "url": "{{baseUrl}}/carreras",
+            "body": {
+              "mode": "raw",
+              "raw": "x"
+            }
+          }
+        },
+        {
+          "name": "Swagger disponible",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{host}}/swagger/v1/swagger.json"
+          }
+        }
+      ]
+    }
+  ]
+}
