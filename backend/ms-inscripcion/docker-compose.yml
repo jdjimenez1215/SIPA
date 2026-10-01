@@ -1,0 +1,36 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: inscripcion
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d inscripcion"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      Swagger__Enabled: "true"
+      ConnectionStrings__Default: "Host=db;Port=5432;Database=inscripcion;Username=postgres;Password=postgres"
+      Enrollment__MaxSemestersAhead: "3"
+      Enrollment__CurrentPeriod: "2026-2"
+      Database__ApplyMigrationsOnStartup: "true"
+    ports:
+      - "${API_PORT:-8080}:8080"
+
+volumes:
+  pgdata:

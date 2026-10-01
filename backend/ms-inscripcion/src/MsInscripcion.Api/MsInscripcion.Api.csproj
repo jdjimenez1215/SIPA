@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <ItemGroup>
+    <PackageReference Include="Serilog.AspNetCore" />
+    <PackageReference Include="Swashbuckle.AspNetCore" />
+    <!-- Required in the startup project so `dotnet ef -s` works. -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\MsInscripcion.Application\MsInscripcion.Application.csproj" />
+    <ProjectReference Include="..\MsInscripcion.Infrastructure\MsInscripcion.Infrastructure.csproj" />
+  </ItemGroup>
+</Project>
