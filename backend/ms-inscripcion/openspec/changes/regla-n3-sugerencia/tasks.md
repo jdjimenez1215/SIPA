@@ -44,12 +44,12 @@ Spec refs: ER=enrollment-rules, ES=enrollment-suggestion, EM=enrollment-manageme
 - [x] 5.3 `dotnet test`
 
 ## Batch 6 - E2E, Postman, README (sub-agent)
-- [ ] 6.1 Rewrite `scripts/e2e.sh`: new codes/ids, "Sugerencia" section, POST cases from design (EM, AE)
-- [ ] 6.2 Edit/regenerate `postman/MsInscripcion.postman_collection.json` (script in agent temp dir)
-- [ ] 6.3 `README.md`: rule, codes, config, seed tables, curl, deprecated endpoint, `down -v`, A1-A5
+- [x] 6.1 Rewrite `scripts/e2e.sh`: new codes/ids, "Sugerencia" section, POST cases from design (EM, AE)
+- [x] 6.2 Edit/regenerate `postman/MsInscripcion.postman_collection.json` (script in agent temp dir)
+- [x] 6.3 `README.md`: rule, codes, config, seed tables, curl, deprecated endpoint, `down -v`, A1-A5
 
 ## Batch 7 - Run & verify (ORCHESTRATOR ONLY)
-- [ ] 7.1 `docker compose down -v && API_PORT=8081 DB_PORT=5433 docker compose up --build`
-- [ ] 7.2 Run `scripts/e2e.sh`; run newman (DR first start/restart)
+- [x] 7.1 `docker compose down -v && API_PORT=8081 DB_PORT=5433 docker compose up --build`
+- [x] 7.2 Run `scripts/e2e.sh`; run newman (DR first start/restart)
 
 > **Nota B5 (orquestador):** la migración incremental `UnillanosSeed` falló en BD nueva (23503: EF emitió `UpdateData` de inscripciones antes del `InsertData` de materias). Se regeneró una única `InitialCreate` (desvío del ADR D12, justificado: no hay BD productiva y el seed nuevo ya exige `docker compose down -v`). `dotnet test`: 114/114.

@@ -1,8 +1,8 @@
 {
   "info": {
-    "_postman_id": "2de977fb-666f-49be-91e7-91f0c2863ede",
+    "_postman_id": "4cbd40ab-e8ac-4d94-ad27-df97a15222d1",
     "name": "MsInscripcion - E2E",
-    "description": "Pruebas E2E de los 20 endpoints del microservicio de inscripción (equivalente a scripts/e2e.sh).\n\n**Requisitos:** semilla limpia, porque cada paso modifica el estado: `docker compose down -v && docker compose up --build -d`.\n\n**Ejecutar en orden** con el Collection Runner o con Newman:\n`npx newman run postman/MsInscripcion.postman_collection.json -e postman/MsInscripcion.local.postman_environment.json`\n\nCambiá `host` en el environment si la API no corre en el puerto 8080 (por ejemplo `API_PORT=8081`).",
+    "description": "Pruebas E2E de los 21 endpoints del microservicio de inscripción, con la semilla Unillanos (equivalente a scripts/e2e.sh).\n\n**Requisitos:** semilla limpia, porque cada paso modifica el estado: `docker compose down -v && docker compose up --build -d`.\n\n**Ejecutar en orden** con el Collection Runner o con Newman:\n`npx newman run postman/MsInscripcion.postman_collection.json -e postman/MsInscripcion.local.postman_environment.json`\n\nCambiá `host` en el environment si la API no corre en el puerto 8080 (por ejemplo `API_PORT=8081`).",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "event": [
@@ -51,6 +51,14 @@
     },
     {
       "key": "raceWinnerId",
+      "value": ""
+    },
+    {
+      "key": "lauraInscId",
+      "value": ""
+    },
+    {
+      "key": "camilaInscId",
       "value": ""
     }
   ],
@@ -287,7 +295,362 @@
       ]
     },
     {
-      "name": "02 Materias",
+      "name": "02 Estudiantes",
+      "item": [
+        {
+          "name": "Inscripciones de Andrés en 2026-2",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"contiene \\\"codigo\\\":\\\"603903\\\"\", () => pm.expect(pm.response.text()).to.include(\"\\\"codigo\\\":\\\"603903\\\"\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/estudiantes/5/inscripciones?periodo=2026-2"
+          }
+        },
+        {
+          "name": "Inscripciones con periodo por defecto",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"contiene \\\"codigo\\\":\\\"603903\\\"\", () => pm.expect(pm.response.text()).to.include(\"\\\"codigo\\\":\\\"603903\\\"\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/estudiantes/5/inscripciones"
+          }
+        },
+        {
+          "name": "Inscripciones de Laura (vacías)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"contiene []\", () => pm.expect(pm.response.text()).to.include(\"[]\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/estudiantes/1/inscripciones?periodo=2026-2"
+          }
+        },
+        {
+          "name": "Inscripciones de estudiante inexistente → 404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"contiene ESTUDIANTE_NO_ENCONTRADO\", () => pm.expect(pm.response.text()).to.include(\"ESTUDIANTE_NO_ENCONTRADO\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/estudiantes/999/inscripciones"
+          }
+        },
+        {
+          "name": "Materias disponibles de Laura (= filas Sugerida)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"contiene \\\"codigo\\\":\\\"603601\\\"\", () => pm.expect(pm.response.text()).to.include(\"\\\"codigo\\\":\\\"603601\\\"\"));",
+                  "pm.test(\"no contiene \\\"codigo\\\":\\\"603702\\\"\", () => pm.expect(pm.response.text()).to.not.include(\"\\\"codigo\\\":\\\"603702\\\"\"));",
+                  "pm.test(\"8 materias\", () => pm.expect(pm.response.json()).to.have.lengthOf(8));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/estudiantes/1/materias-disponibles",
+            "description": "Endpoint deprecado: delega en la sugerencia y devuelve solo las filas Sugerida."
+          }
+        },
+        {
+          "name": "Materias disponibles excluye aprobadas",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"contiene \\\"codigo\\\":\\\"603703\\\"\", () => pm.expect(pm.response.text()).to.include(\"\\\"codigo\\\":\\\"603703\\\"\"));",
+                  "pm.test(\"no contiene \\\"codigo\\\":\\\"603101\\\"\", () => pm.expect(pm.response.text()).to.not.include(\"\\\"codigo\\\":\\\"603101\\\"\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/estudiantes/1/materias-disponibles"
+          }
+        },
+        {
+          "name": "Materias disponibles de estudiante inexistente → 404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"contiene ESTUDIANTE_NO_ENCONTRADO\", () => pm.expect(pm.response.text()).to.include(\"ESTUDIANTE_NO_ENCONTRADO\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/estudiantes/999/materias-disponibles"
+          }
+        }
+      ],
+      "description": "Solo lectura. Va ANTES de crear materias: una materia nueva de semestre bajo aparecería como adeudada para todos."
+    },
+    {
+      "name": "03 Sugerencia",
+      "item": [
+        {
+          "name": "Sugerencia de Laura (23 créditos)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"contiene \\\"totalCreditos\\\":23\", () => pm.expect(pm.response.text()).to.include(\"\\\"totalCreditos\\\":23\"));",
+                  "pm.test(\"contiene \\\"notificaciones\\\":[]\", () => pm.expect(pm.response.text()).to.include(\"\\\"notificaciones\\\":[]\"));",
+                  "const body = pm.response.json();",
+                  "const by = Object.fromEntries(body.materiasSugeridas.map(r => [r.codigo, r]));",
+                  "pm.test(\"12 filas\", () => pm.expect(body.materiasSugeridas).to.have.lengthOf(12));",
+                  "pm.test(\"toda fila trae id\", () => pm.expect(body.materiasSugeridas.every(r => Number.isInteger(r.id))).to.be.true);",
+                  "pm.test(\"totalCreditos 23\", () => pm.expect(body.totalCreditos).to.eql(23));",
+                  "pm.test(\"603601 Sugerida (prereq true, motivo None)\", () => pm.expect(by[\"603601\"]).to.include({ estado: \"Sugerida\", prerrequisitoCumplido: true, motivo: null }));",
+                  "pm.test(\"603606 Sugerida (prereq true, motivo None)\", () => pm.expect(by[\"603606\"]).to.include({ estado: \"Sugerida\", prerrequisitoCumplido: true, motivo: null }));",
+                  "pm.test(\"603701 Sugerida (prereq true, motivo None)\", () => pm.expect(by[\"603701\"]).to.include({ estado: \"Sugerida\", prerrequisitoCumplido: true, motivo: null }));",
+                  "pm.test(\"603703 Sugerida (prereq true, motivo None)\", () => pm.expect(by[\"603703\"]).to.include({ estado: \"Sugerida\", prerrequisitoCumplido: true, motivo: null }));",
+                  "pm.test(\"603702 Prerrequisito (prereq false, motivo PREREQUISITO_NO_CUMPLIDO)\", () => pm.expect(by[\"603702\"]).to.include({ estado: \"Prerrequisito\", prerrequisitoCumplido: false, motivo: \"PREREQUISITO_NO_CUMPLIDO\" }));",
+                  "pm.test(\"603704 Prerrequisito (prereq false, motivo PREREQUISITO_NO_CUMPLIDO)\", () => pm.expect(by[\"603704\"]).to.include({ estado: \"Prerrequisito\", prerrequisitoCumplido: false, motivo: \"PREREQUISITO_NO_CUMPLIDO\" }));",
+                  "pm.test(\"603705 Prerrequisito (prereq false, motivo PREREQUISITO_NO_CUMPLIDO)\", () => pm.expect(by[\"603705\"]).to.include({ estado: \"Prerrequisito\", prerrequisitoCumplido: false, motivo: \"PREREQUISITO_NO_CUMPLIDO\" }));",
+                  "pm.test(\"603706 Prerrequisito (prereq false, motivo PREREQUISITO_NO_CUMPLIDO)\", () => pm.expect(by[\"603706\"]).to.include({ estado: \"Prerrequisito\", prerrequisitoCumplido: false, motivo: \"PREREQUISITO_NO_CUMPLIDO\" }));",
+                  "pm.test(\"encabezado\", () => pm.expect(body).to.include({ nombreEstudiante: \"Laura Gómez Ríos\", programa: \"Ingeniería de Sistemas\", semestreActual: 6, periodo: \"2026-2\" }));",
+                  "pm.test(\"sin aprobadas ni semestre 8\", () => pm.expect(Object.keys(by).some(c => /^(603[1-5]|6038)/.test(c))).to.be.false);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/estudiantes/1/sugerencia"
+          }
+        },
+        {
+          "name": "Sugerencia con periodo explícito",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"contiene \\\"periodo\\\":\\\"2026-2\\\"\", () => pm.expect(pm.response.text()).to.include(\"\\\"periodo\\\":\\\"2026-2\\\"\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/estudiantes/1/sugerencia?periodo=2026-2"
+          }
+        },
+        {
+          "name": "Sugerencia con periodo inválido → 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"contiene VALIDACION_FALLIDA\", () => pm.expect(pm.response.text()).to.include(\"VALIDACION_FALLIDA\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/estudiantes/1/sugerencia?periodo=2026-9"
+          }
+        },
+        {
+          "name": "Sugerencia de estudiante inexistente → 404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"contiene ESTUDIANTE_NO_ENCONTRADO\", () => pm.expect(pm.response.text()).to.include(\"ESTUDIANTE_NO_ENCONTRADO\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/estudiantes/999/sugerencia"
+          }
+        },
+        {
+          "name": "Sugerencia de Mateo (tope 3 en N+1)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "const by = Object.fromEntries(body.materiasSugeridas.map(r => [r.codigo, r]));",
+                  "pm.test(\"603801 Sugerida (prereq true, motivo None)\", () => pm.expect(by[\"603801\"]).to.include({ estado: \"Sugerida\", prerrequisitoCumplido: true, motivo: null }));",
+                  "pm.test(\"603802 Sugerida (prereq true, motivo None)\", () => pm.expect(by[\"603802\"]).to.include({ estado: \"Sugerida\", prerrequisitoCumplido: true, motivo: null }));",
+                  "pm.test(\"603803 Sugerida (prereq true, motivo None)\", () => pm.expect(by[\"603803\"]).to.include({ estado: \"Sugerida\", prerrequisitoCumplido: true, motivo: null }));",
+                  "pm.test(\"603804 Prerrequisito (prereq true, motivo LIMITE_SIGUIENTE_SEMESTRE_EXCEDIDO)\", () => pm.expect(by[\"603804\"]).to.include({ estado: \"Prerrequisito\", prerrequisitoCumplido: true, motivo: \"LIMITE_SIGUIENTE_SEMESTRE_EXCEDIDO\" }));",
+                  "pm.test(\"603806 Prerrequisito (prereq true, motivo LIMITE_SIGUIENTE_SEMESTRE_EXCEDIDO)\", () => pm.expect(by[\"603806\"]).to.include({ estado: \"Prerrequisito\", prerrequisitoCumplido: true, motivo: \"LIMITE_SIGUIENTE_SEMESTRE_EXCEDIDO\" }));",
+                  "pm.test(\"603805 Prerrequisito (prereq false, motivo PREREQUISITO_NO_CUMPLIDO)\", () => pm.expect(by[\"603805\"]).to.include({ estado: \"Prerrequisito\", prerrequisitoCumplido: false, motivo: \"PREREQUISITO_NO_CUMPLIDO\" }));",
+                  "pm.test(\"603706 Sugerida (prereq true, motivo None)\", () => pm.expect(by[\"603706\"]).to.include({ estado: \"Sugerida\", prerrequisitoCumplido: true, motivo: null }));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/estudiantes/2/sugerencia"
+          }
+        },
+        {
+          "name": "Sugerencia de Camila (adeudada + tope compartido)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "const by = Object.fromEntries(body.materiasSugeridas.map(r => [r.codigo, r]));",
+                  "pm.test(\"603305 Sugerida (prereq true, motivo None)\", () => pm.expect(by[\"603305\"]).to.include({ estado: \"Sugerida\", prerrequisitoCumplido: true, motivo: null }));",
+                  "pm.test(\"603801 Sugerida (prereq true, motivo None)\", () => pm.expect(by[\"603801\"]).to.include({ estado: \"Sugerida\", prerrequisitoCumplido: true, motivo: null }));",
+                  "pm.test(\"603802 Sugerida (prereq true, motivo None)\", () => pm.expect(by[\"603802\"]).to.include({ estado: \"Sugerida\", prerrequisitoCumplido: true, motivo: null }));",
+                  "pm.test(\"603803 Prerrequisito (prereq true, motivo LIMITE_SIGUIENTE_SEMESTRE_EXCEDIDO)\", () => pm.expect(by[\"603803\"]).to.include({ estado: \"Prerrequisito\", prerrequisitoCumplido: true, motivo: \"LIMITE_SIGUIENTE_SEMESTRE_EXCEDIDO\" }));",
+                  "pm.test(\"603804 Prerrequisito (prereq true, motivo LIMITE_SIGUIENTE_SEMESTRE_EXCEDIDO)\", () => pm.expect(by[\"603804\"]).to.include({ estado: \"Prerrequisito\", prerrequisitoCumplido: true, motivo: \"LIMITE_SIGUIENTE_SEMESTRE_EXCEDIDO\" }));",
+                  "pm.test(\"603806 Prerrequisito (prereq true, motivo LIMITE_SIGUIENTE_SEMESTRE_EXCEDIDO)\", () => pm.expect(by[\"603806\"]).to.include({ estado: \"Prerrequisito\", prerrequisitoCumplido: true, motivo: \"LIMITE_SIGUIENTE_SEMESTRE_EXCEDIDO\" }));",
+                  "pm.test(\"603805 Prerrequisito (prereq false, motivo PREREQUISITO_NO_CUMPLIDO)\", () => pm.expect(by[\"603805\"]).to.include({ estado: \"Prerrequisito\", prerrequisitoCumplido: false, motivo: \"PREREQUISITO_NO_CUMPLIDO\" }));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/estudiantes/3/sugerencia"
+          }
+        },
+        {
+          "name": "Sugerencia de Sofía (cruce y cupo no consumen tope)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "const by = Object.fromEntries(body.materiasSugeridas.map(r => [r.codigo, r]));",
+                  "pm.test(\"603801 Sugerida (prereq true, motivo None)\", () => pm.expect(by[\"603801\"]).to.include({ estado: \"Sugerida\", prerrequisitoCumplido: true, motivo: null }));",
+                  "pm.test(\"603901 Prerrequisito (prereq false, motivo PREREQUISITO_NO_CUMPLIDO)\", () => pm.expect(by[\"603901\"]).to.include({ estado: \"Prerrequisito\", prerrequisitoCumplido: false, motivo: \"PREREQUISITO_NO_CUMPLIDO\" }));",
+                  "pm.test(\"603902 Prerrequisito (prereq true, motivo CRUCE_HORARIO)\", () => pm.expect(by[\"603902\"]).to.include({ estado: \"Prerrequisito\", prerrequisitoCumplido: true, motivo: \"CRUCE_HORARIO\" }));",
+                  "pm.test(\"603903 Prerrequisito (prereq true, motivo CUPO_AGOTADO)\", () => pm.expect(by[\"603903\"]).to.include({ estado: \"Prerrequisito\", prerrequisitoCumplido: true, motivo: \"CUPO_AGOTADO\" }));",
+                  "pm.test(\"603904 Sugerida (prereq true, motivo None)\", () => pm.expect(by[\"603904\"]).to.include({ estado: \"Sugerida\", prerrequisitoCumplido: true, motivo: null }));",
+                  "pm.test(\"603905 Sugerida (prereq true, motivo None)\", () => pm.expect(by[\"603905\"]).to.include({ estado: \"Sugerida\", prerrequisitoCumplido: true, motivo: null }));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/estudiantes/4/sugerencia"
+          }
+        },
+        {
+          "name": "Sugerencia de Andrés omite la inscrita",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"contiene \\\"semestreActual\\\":9\", () => pm.expect(pm.response.text()).to.include(\"\\\"semestreActual\\\":9\"));",
+                  "pm.test(\"no contiene \\\"codigo\\\":\\\"603903\\\"\", () => pm.expect(pm.response.text()).to.not.include(\"\\\"codigo\\\":\\\"603903\\\"\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/estudiantes/5/sugerencia"
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 Materias",
       "item": [
         {
           "name": "Catálogo completo",
@@ -298,7 +661,7 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
-                  "pm.test(\"contiene \\\"codigo\\\":\\\"MAT101\\\"\", () => pm.expect(pm.response.text()).to.include(\"\\\"codigo\\\":\\\"MAT101\\\"\"));"
+                  "pm.test(\"contiene \\\"codigo\\\":\\\"603101\\\"\", () => pm.expect(pm.response.text()).to.include(\"\\\"codigo\\\":\\\"603101\\\"\"));"
                 ]
               }
             }
@@ -318,7 +681,7 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
-                  "pm.test(\"contiene \\\"codigo\\\":\\\"MAT101\\\"\", () => pm.expect(pm.response.text()).to.include(\"\\\"codigo\\\":\\\"MAT101\\\"\"));",
+                  "pm.test(\"contiene \\\"codigo\\\":\\\"603101\\\"\", () => pm.expect(pm.response.text()).to.include(\"\\\"codigo\\\":\\\"603101\\\"\"));",
                   "pm.test(\"no contiene \\\"codigo\\\":\\\"ADM101\\\"\", () => pm.expect(pm.response.text()).to.not.include(\"\\\"codigo\\\":\\\"ADM101\\\"\"));"
                 ]
               }
@@ -328,6 +691,27 @@
             "method": "GET",
             "header": [],
             "url": "{{baseUrl}}/materias?carreraId=1&semestre=1"
+          }
+        },
+        {
+          "name": "Catálogo de la otra carrera",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"contiene \\\"codigo\\\":\\\"ADM101\\\"\", () => pm.expect(pm.response.text()).to.include(\"\\\"codigo\\\":\\\"ADM101\\\"\"));",
+                  "pm.test(\"no contiene \\\"codigo\\\":\\\"603101\\\"\", () => pm.expect(pm.response.text()).to.not.include(\"\\\"codigo\\\":\\\"603101\\\"\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/materias?carreraId=2"
           }
         },
         {
@@ -367,7 +751,7 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": "{{baseUrl}}/materias/1"
+            "url": "{{baseUrl}}/materias/27"
           }
         },
         {
@@ -511,7 +895,7 @@
       ]
     },
     {
-      "name": "03 Horarios",
+      "name": "05 Horarios",
       "item": [
         {
           "name": "Horarios de materia nueva (vacío)",
@@ -531,6 +915,26 @@
             "method": "GET",
             "header": [],
             "url": "{{baseUrl}}/materias/{{materiaId}}/horarios"
+          }
+        },
+        {
+          "name": "Horarios de materia sembrada",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"contiene \\\"diaSemana\\\":\\\"Lunes\\\"\", () => pm.expect(pm.response.text()).to.include(\"\\\"diaSemana\\\":\\\"Lunes\\\"\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/materias/39/horarios"
           }
         },
         {
@@ -702,10 +1106,10 @@
       ]
     },
     {
-      "name": "04 Prerrequisitos",
+      "name": "06 Prerrequisitos",
       "item": [
         {
-          "name": "Prerrequisitos de EDD301",
+          "name": "Prerrequisitos de 603401",
           "event": [
             {
               "listen": "test",
@@ -713,7 +1117,7 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
-                  "pm.test(\"contiene \\\"materiaRequisitoId\\\":7\", () => pm.expect(pm.response.text()).to.include(\"\\\"materiaRequisitoId\\\":7\"));"
+                  "pm.test(\"contiene \\\"materiaRequisitoId\\\":11\", () => pm.expect(pm.response.text()).to.include(\"\\\"materiaRequisitoId\\\":11\"));"
                 ]
               }
             }
@@ -721,7 +1125,7 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": "{{baseUrl}}/materias/10/prerrequisitos"
+            "url": "{{baseUrl}}/materias/16/prerrequisitos"
           }
         },
         {
@@ -838,7 +1242,7 @@
               "mode": "raw",
               "raw": "{\n  \"materiaRequisitoId\": {{materiaId}}\n}"
             },
-            "description": "TST101 ya requiere MAT101; hacer que MAT101 requiera TST101 cierra un ciclo."
+            "description": "TST101 ya requiere 603101; hacer que 603101 requiera TST101 cierra un ciclo."
           }
         },
         {
@@ -883,116 +1287,129 @@
       ]
     },
     {
-      "name": "05 Estudiantes",
+      "name": "07 Inscripciones - reglas y validaciones",
       "item": [
         {
-          "name": "Inscripciones de Ana en 2026-2",
+          "name": "Laura 603601+603702: prerrequisito estricto → 422",
           "event": [
             {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
-                  "pm.test(\"contiene \\\"codigo\\\":\\\"ETI101\\\"\", () => pm.expect(pm.response.text()).to.include(\"\\\"codigo\\\":\\\"ETI101\\\"\"));"
+                  "pm.test(\"HTTP 422\", () => pm.response.to.have.status(422));",
+                  "pm.test(\"contiene PREREQUISITO_NO_CUMPLIDO\", () => pm.expect(pm.response.text()).to.include(\"PREREQUISITO_NO_CUMPLIDO\"));",
+                  "pm.test(\"no contiene \\\"code\\\":\\\"MATERIA_YA_APROBADA\\\"\", () => pm.expect(pm.response.text()).to.not.include(\"\\\"code\\\":\\\"MATERIA_YA_APROBADA\\\"\"));"
                 ]
               }
             }
           ],
           "request": {
-            "method": "GET",
-            "header": [],
-            "url": "{{baseUrl}}/estudiantes/1/inscripciones?periodo=2026-2"
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/inscripciones",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estudianteId\": 1,\n  \"periodo\": \"2026-2\",\n  \"codigosMaterias\": [\"603601\", \"603702\"]\n}"
+            },
+            "description": "603702 requiere 603601, que Laura aún no aprobó: pedirlas juntas NO satisface el prerrequisito."
           }
         },
         {
-          "name": "Inscripciones con periodo por defecto",
+          "name": "Laura 603801 (semestre 8 > N+1) → 422",
           "event": [
             {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
-                  "pm.test(\"contiene \\\"codigo\\\":\\\"ETI101\\\"\", () => pm.expect(pm.response.text()).to.include(\"\\\"codigo\\\":\\\"ETI101\\\"\"));"
+                  "pm.test(\"HTTP 422\", () => pm.response.to.have.status(422));",
+                  "pm.test(\"contiene SEMESTRE_EXCEDIDO\", () => pm.expect(pm.response.text()).to.include(\"SEMESTRE_EXCEDIDO\"));",
+                  "pm.test(\"contiene \\\"materiaSemestre\\\":8,\\\"maxAllowedSemestre\\\":7\", () => pm.expect(pm.response.text()).to.include(\"\\\"materiaSemestre\\\":8,\\\"maxAllowedSemestre\\\":7\"));"
                 ]
               }
             }
           ],
           "request": {
-            "method": "GET",
-            "header": [],
-            "url": "{{baseUrl}}/estudiantes/1/inscripciones"
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/inscripciones",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estudianteId\": 1,\n  \"periodo\": \"2026-2\",\n  \"codigosMaterias\": [\"603801\"]\n}"
+            }
           }
         },
         {
-          "name": "Inscripciones de estudiante inexistente → 404",
+          "name": "Laura ADM101 (otra carrera) → 422",
           "event": [
             {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"HTTP 404\", () => pm.response.to.have.status(404));",
-                  "pm.test(\"contiene ESTUDIANTE_NO_ENCONTRADO\", () => pm.expect(pm.response.text()).to.include(\"ESTUDIANTE_NO_ENCONTRADO\"));"
+                  "pm.test(\"HTTP 422\", () => pm.response.to.have.status(422));",
+                  "pm.test(\"contiene CARRERA_NO_CORRESPONDE\", () => pm.expect(pm.response.text()).to.include(\"CARRERA_NO_CORRESPONDE\"));"
                 ]
               }
             }
           ],
           "request": {
-            "method": "GET",
-            "header": [],
-            "url": "{{baseUrl}}/estudiantes/999/inscripciones"
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/inscripciones",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estudianteId\": 1,\n  \"periodo\": \"2026-2\",\n  \"codigosMaterias\": [\"ADM101\"]\n}"
+            }
           }
         },
         {
-          "name": "Materias disponibles para Ana",
+          "name": "Laura 603101 (ya aprobada) → 422",
           "event": [
             {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
-                  "pm.test(\"contiene \\\"codigo\\\":\\\"MAT201\\\"\", () => pm.expect(pm.response.text()).to.include(\"\\\"codigo\\\":\\\"MAT201\\\"\"));",
-                  "pm.test(\"no contiene \\\"id\\\":1,\\\"codigo\\\":\\\"MAT101\\\"\", () => pm.expect(pm.response.text()).to.not.include(\"\\\"id\\\":1,\\\"codigo\\\":\\\"MAT101\\\"\"));"
+                  "pm.test(\"HTTP 422\", () => pm.response.to.have.status(422));",
+                  "pm.test(\"contiene MATERIA_YA_APROBADA\", () => pm.expect(pm.response.text()).to.include(\"MATERIA_YA_APROBADA\"));"
                 ]
               }
             }
           ],
           "request": {
-            "method": "GET",
-            "header": [],
-            "url": "{{baseUrl}}/estudiantes/1/materias-disponibles"
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/inscripciones",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estudianteId\": 1,\n  \"periodo\": \"2026-2\",\n  \"codigosMaterias\": [\"603101\"]\n}"
+            }
           }
         },
         {
-          "name": "Materias disponibles de estudiante inexistente → 404",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"HTTP 404\", () => pm.response.to.have.status(404));",
-                  "pm.test(\"contiene ESTUDIANTE_NO_ENCONTRADO\", () => pm.expect(pm.response.text()).to.include(\"ESTUDIANTE_NO_ENCONTRADO\"));"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": "{{baseUrl}}/estudiantes/999/materias-disponibles"
-          }
-        }
-      ]
-    },
-    {
-      "name": "06 Inscripciones - reglas y validaciones",
-      "item": [
-        {
-          "name": "Todas las violaciones a la vez → 422 (7)",
+          "name": "Violaciones mezcladas → 422 (4)",
           "event": [
             {
               "listen": "test",
@@ -1002,14 +1419,12 @@
                   "pm.test(\"HTTP 422\", () => pm.response.to.have.status(422));",
                   "pm.test(\"contiene INSCRIPCION_RECHAZADA\", () => pm.expect(pm.response.text()).to.include(\"INSCRIPCION_RECHAZADA\"));",
                   "const v = pm.response.json().violations || [];",
-                  "pm.test(\"exactamente 7 violaciones\", () => pm.expect(v).to.have.lengthOf(7));",
-                  "const byCode = Object.fromEntries(v.map(x => [x.materiaCodigo, x.code]));",
-                  "pm.test(\"cada materia con su violacion\", () => pm.expect(byCode).to.eql({",
-                  "  MAT101: \"MATERIA_YA_APROBADA\", MAT201: \"CRUCE_HORARIO\", ETI101: \"MATERIA_YA_INSCRITA\",",
-                  "  ALG201: \"CUPO_AGOTADO\", EDD301: \"PREREQUISITO_NO_CUMPLIDO\", ING601: \"SEMESTRE_EXCEDIDO\",",
-                  "  ADM101: \"CARRERA_NO_CORRESPONDE\"",
-                  "}));",
-                  "pm.test(\"FIS101 no tiene violaciones\", () => pm.expect(byCode).to.not.have.property(\"FIS101\"));"
+                  "pm.test(\"exactamente 4 violaciones\", () => pm.expect(v).to.have.lengthOf(4));",
+                  "const codes = v.map(x => x.code);",
+                  "pm.test(\"violacion presente: MATERIA_YA_APROBADA\", () => pm.expect(codes).to.include(\"MATERIA_YA_APROBADA\"));",
+                  "pm.test(\"violacion presente: PREREQUISITO_NO_CUMPLIDO\", () => pm.expect(codes).to.include(\"PREREQUISITO_NO_CUMPLIDO\"));",
+                  "pm.test(\"violacion presente: SEMESTRE_EXCEDIDO\", () => pm.expect(codes).to.include(\"SEMESTRE_EXCEDIDO\"));",
+                  "pm.test(\"violacion presente: CARRERA_NO_CORRESPONDE\", () => pm.expect(codes).to.include(\"CARRERA_NO_CORRESPONDE\"));"
                 ]
               }
             }
@@ -1025,13 +1440,12 @@
             "url": "{{baseUrl}}/inscripciones",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"estudianteId\": 1,\n  \"periodo\": \"2026-2\",\n  \"materiaIds\": [1,2,6,4,9,10,11,12]\n}"
-            },
-            "description": "Una violación por materia problemática; FIS101 (reprobada) sí se puede recursar."
+              "raw": "{\n  \"estudianteId\": 1,\n  \"periodo\": \"2026-2\",\n  \"codigosMaterias\": [\"603101\", \"603702\", \"603801\", \"ADM101\"]\n}"
+            }
           }
         },
         {
-          "name": "Cruce con materia ya inscrita (HUM101 vs ETI101) → 422",
+          "name": "Mateo 4 extras por ids (tope 3) → 422",
           "event": [
             {
               "listen": "test",
@@ -1039,8 +1453,9 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test(\"HTTP 422\", () => pm.response.to.have.status(422));",
-                  "pm.test(\"contiene CRUCE_HORARIO\", () => pm.expect(pm.response.text()).to.include(\"CRUCE_HORARIO\"));",
-                  "pm.test(\"contiene \\\"conflictsWith\\\":\\\"ETI101\\\"\", () => pm.expect(pm.response.text()).to.include(\"\\\"conflictsWith\\\":\\\"ETI101\\\"\"));"
+                  "pm.test(\"contiene LIMITE_SIGUIENTE_SEMESTRE_EXCEDIDO\", () => pm.expect(pm.response.text()).to.include(\"LIMITE_SIGUIENTE_SEMESTRE_EXCEDIDO\"));",
+                  "pm.test(\"contiene \\\"maxExtraSubjects\\\":3,\\\"used\\\":3\", () => pm.expect(pm.response.text()).to.include(\"\\\"maxExtraSubjects\\\":3,\\\"used\\\":3\"));",
+                  "pm.test(\"solo la 4a extra se reporta\", () => pm.expect(pm.response.json().violations).to.have.lengthOf(1));"
                 ]
               }
             }
@@ -1056,7 +1471,244 @@
             "url": "{{baseUrl}}/inscripciones",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"estudianteId\": 1,\n  \"periodo\": \"2026-2\",\n  \"materiaIds\": [5]\n}"
+              "raw": "{\n  \"estudianteId\": 2,\n  \"periodo\": \"2026-2\",\n  \"materiaIds\": [39,40,41,42]\n}"
+            }
+          }
+        },
+        {
+          "name": "Mateo 3 extras + una materia N: N no consume tope → 422",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 422\", () => pm.response.to.have.status(422));",
+                  "pm.test(\"contiene LIMITE_SIGUIENTE_SEMESTRE_EXCEDIDO\", () => pm.expect(pm.response.text()).to.include(\"LIMITE_SIGUIENTE_SEMESTRE_EXCEDIDO\"));",
+                  "pm.test(\"contiene \\\"materiaCodigo\\\":\\\"603804\\\"\", () => pm.expect(pm.response.text()).to.include(\"\\\"materiaCodigo\\\":\\\"603804\\\"\"));",
+                  "pm.test(\"no contiene \\\"materiaCodigo\\\":\\\"603701\\\"\", () => pm.expect(pm.response.text()).to.not.include(\"\\\"materiaCodigo\\\":\\\"603701\\\"\"));",
+                  "pm.test(\"solo 603804 excede\", () => pm.expect(pm.response.json().violations).to.have.lengthOf(1));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/inscripciones",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estudianteId\": 2,\n  \"periodo\": \"2026-2\",\n  \"codigosMaterias\": [\"603801\", \"603802\", \"603803\", \"603804\", \"603701\"]\n}"
+            }
+          }
+        },
+        {
+          "name": "Sofía 603801+603902 (cruce) → 422",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 422\", () => pm.response.to.have.status(422));",
+                  "pm.test(\"contiene CRUCE_HORARIO\", () => pm.expect(pm.response.text()).to.include(\"CRUCE_HORARIO\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/inscripciones",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estudianteId\": 4,\n  \"periodo\": \"2026-2\",\n  \"codigosMaterias\": [\"603801\", \"603902\"]\n}"
+            }
+          }
+        },
+        {
+          "name": "Sofía 603903 (cupo agotado) → 422",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 422\", () => pm.response.to.have.status(422));",
+                  "pm.test(\"contiene CUPO_AGOTADO\", () => pm.expect(pm.response.text()).to.include(\"CUPO_AGOTADO\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/inscripciones",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estudianteId\": 4,\n  \"periodo\": \"2026-2\",\n  \"codigosMaterias\": [\"603903\"]\n}"
+            }
+          }
+        },
+        {
+          "name": "Camila 305+801-803 (tope compartido con adeudada) → 422",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 422\", () => pm.response.to.have.status(422));",
+                  "pm.test(\"contiene LIMITE_SIGUIENTE_SEMESTRE_EXCEDIDO\", () => pm.expect(pm.response.text()).to.include(\"LIMITE_SIGUIENTE_SEMESTRE_EXCEDIDO\"));",
+                  "pm.test(\"contiene \\\"materiaCodigo\\\":\\\"603803\\\"\", () => pm.expect(pm.response.text()).to.include(\"\\\"materiaCodigo\\\":\\\"603803\\\"\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/inscripciones",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estudianteId\": 3,\n  \"periodo\": \"2026-2\",\n  \"codigosMaterias\": [\"603305\", \"603801\", \"603802\", \"603803\"]\n}"
+            }
+          }
+        },
+        {
+          "name": "Ambas listas → 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"contiene VALIDACION_FALLIDA\", () => pm.expect(pm.response.text()).to.include(\"VALIDACION_FALLIDA\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/inscripciones",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estudianteId\": 1,\n  \"periodo\": \"2026-2\",\n  \"materiaIds\": [27],\n  \"codigosMaterias\": [\"603601\"]\n}"
+            }
+          }
+        },
+        {
+          "name": "Ninguna lista → 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"contiene VALIDACION_FALLIDA\", () => pm.expect(pm.response.text()).to.include(\"VALIDACION_FALLIDA\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/inscripciones",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estudianteId\": 1,\n  \"periodo\": \"2026-2\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Código desconocido → 404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"contiene MATERIA_NO_ENCONTRADA\", () => pm.expect(pm.response.text()).to.include(\"MATERIA_NO_ENCONTRADA\"));",
+                  "pm.test(\"no contiene INSCRIPCION_RECHAZADA\", () => pm.expect(pm.response.text()).to.not.include(\"INSCRIPCION_RECHAZADA\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/inscripciones",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estudianteId\": 1,\n  \"periodo\": \"2026-2\",\n  \"codigosMaterias\": [\"999999\"]\n}"
+            }
+          }
+        },
+        {
+          "name": "Códigos duplicados en la solicitud → 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"contiene MATERIA_DUPLICADA_EN_SOLICITUD\", () => pm.expect(pm.response.text()).to.include(\"MATERIA_DUPLICADA_EN_SOLICITUD\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/inscripciones",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estudianteId\": 1,\n  \"periodo\": \"2026-2\",\n  \"codigosMaterias\": [\"603601\", \"603601\"]\n}"
             }
           }
         },
@@ -1085,7 +1737,7 @@
             "url": "{{baseUrl}}/inscripciones",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"estudianteId\": 1,\n  \"periodo\": \"2026-2\",\n  \"materiaIds\": [6,6]\n}"
+              "raw": "{\n  \"estudianteId\": 1,\n  \"periodo\": \"2026-2\",\n  \"materiaIds\": [27,27]\n}"
             }
           }
         },
@@ -1143,7 +1795,7 @@
             "url": "{{baseUrl}}/inscripciones",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"estudianteId\": 1,\n  \"periodo\": \"2026-9\",\n  \"materiaIds\": [6]\n}"
+              "raw": "{\n  \"estudianteId\": 1,\n  \"periodo\": \"2026-9\",\n  \"materiaIds\": [27]\n}"
             }
           }
         },
@@ -1172,12 +1824,12 @@
             "url": "{{baseUrl}}/inscripciones",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"estudianteId\": 999,\n  \"periodo\": \"2026-2\",\n  \"materiaIds\": [6]\n}"
+              "raw": "{\n  \"estudianteId\": 999,\n  \"periodo\": \"2026-2\",\n  \"materiaIds\": [27]\n}"
             }
           }
         },
         {
-          "name": "Materia inexistente → 404",
+          "name": "Materia inexistente (id) → 404",
           "event": [
             {
               "listen": "test",
@@ -1230,12 +1882,12 @@
             "url": "{{baseUrl}}/inscripciones",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"estudianteId\": 1,\n  \"periodo\": \"2026-2\",\n  \"materiaIds\": [6,1]\n}"
+              "raw": "{\n  \"estudianteId\": 1,\n  \"periodo\": \"2026-2\",\n  \"codigosMaterias\": [\"603601\", \"603101\"]\n}"
             }
           }
         },
         {
-          "name": "Atomicidad: MAT201 no quedó inscrita",
+          "name": "Atomicidad: 603601 no quedó inscrita",
           "event": [
             {
               "listen": "test",
@@ -1243,8 +1895,8 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
-                  "pm.test(\"contiene \\\"codigo\\\":\\\"ETI101\\\"\", () => pm.expect(pm.response.text()).to.include(\"\\\"codigo\\\":\\\"ETI101\\\"\"));",
-                  "pm.test(\"no contiene \\\"codigo\\\":\\\"MAT201\\\"\", () => pm.expect(pm.response.text()).to.not.include(\"\\\"codigo\\\":\\\"MAT201\\\"\"));"
+                  "pm.test(\"contiene []\", () => pm.expect(pm.response.text()).to.include(\"[]\"));",
+                  "pm.test(\"no contiene \\\"codigo\\\":\\\"603601\\\"\", () => pm.expect(pm.response.text()).to.not.include(\"\\\"codigo\\\":\\\"603601\\\"\"));"
                 ]
               }
             }
@@ -1258,10 +1910,10 @@
       ]
     },
     {
-      "name": "07 Inscripciones - concurrencia",
+      "name": "08 Inscripciones - concurrencia",
       "item": [
         {
-          "name": "Mismo estudiante, materias que se cruzan (FIS101 ∥ MAT201)",
+          "name": "Mismo estudiante, materias que se cruzan (Sofía 603801 ∥ 603902)",
           "event": [
             {
               "listen": "test",
@@ -1285,8 +1937,8 @@
                   "  const winner = results.find(r => r.code === 201);",
                   "  if (winner) pm.collectionVariables.set(\"raceWinnerId\", winner.json()[0].id);",
                   "};",
-                  "pm.sendRequest(post(1, [2]), (err, res) => { pm.test(\"request A sin error de red\", () => pm.expect(err).to.be.null); results.push(res); done(); });",
-                  "pm.sendRequest(post(1, [6]), (err, res) => { pm.test(\"request B sin error de red\", () => pm.expect(err).to.be.null); results.push(res); done(); });"
+                  "pm.sendRequest(post(4, [39]), (err, res) => { pm.test(\"request A sin error de red\", () => pm.expect(err).to.be.null); results.push(res); done(); });",
+                  "pm.sendRequest(post(4, [46]), (err, res) => { pm.test(\"request B sin error de red\", () => pm.expect(err).to.be.null); results.push(res); done(); });"
                 ]
               }
             }
@@ -1294,7 +1946,7 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": "{{baseUrl}}/estudiantes/1/inscripciones",
+            "url": "{{baseUrl}}/estudiantes/4/inscripciones",
             "description": "El request visible es solo un disparador: el script de tests manda dos POST en paralelo con pm.sendRequest. Sin el lock por estudiante, las dos pasarían."
           }
         },
@@ -1318,7 +1970,7 @@
           }
         },
         {
-          "name": "Último cupo de TST101 (Ana ∥ Carlos)",
+          "name": "Último cupo de TST101 (Mateo ∥ Andrés)",
           "event": [
             {
               "listen": "test",
@@ -1342,8 +1994,8 @@
                   "  const winner = results.find(r => r.code === 201);",
                   "  if (winner) pm.collectionVariables.set(\"raceWinnerId\", winner.json()[0].id);",
                   "};",
-                  "pm.sendRequest(post(1, [Number(pm.collectionVariables.get('materiaId'))]), (err, res) => { pm.test(\"request A sin error de red\", () => pm.expect(err).to.be.null); results.push(res); done(); });",
-                  "pm.sendRequest(post(2, [Number(pm.collectionVariables.get('materiaId'))]), (err, res) => { pm.test(\"request B sin error de red\", () => pm.expect(err).to.be.null); results.push(res); done(); });"
+                  "pm.sendRequest(post(2, [Number(pm.collectionVariables.get('materiaId'))]), (err, res) => { pm.test(\"request A sin error de red\", () => pm.expect(err).to.be.null); results.push(res); done(); });",
+                  "pm.sendRequest(post(5, [Number(pm.collectionVariables.get('materiaId'))]), (err, res) => { pm.test(\"request B sin error de red\", () => pm.expect(err).to.be.null); results.push(res); done(); });"
                 ]
               }
             }
@@ -1354,15 +2006,28 @@
             "url": "{{baseUrl}}/materias/{{materiaId}}",
             "description": "Dos estudiantes pelean el único cupo en paralelo: exactamente uno entra."
           }
-        }
-      ],
-      "description": "Postman ejecuta los requests en secuencia; la concurrencia se logra con dos pm.sendRequest sin await."
-    },
-    {
-      "name": "08 Inscripciones - camino feliz y cancelación",
-      "item": [
+        },
         {
-          "name": "Inscripción exitosa [MAT201, PRG201, EST201] → 201",
+          "name": "Cancelar la inscripción ganadora del cupo",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 204\", () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/inscripciones/{{raceWinnerId}}"
+          }
+        },
+        {
+          "name": "Reinscribir a Andrés tras cancelar (cupo liberado)",
           "event": [
             {
               "listen": "test",
@@ -1370,7 +2035,7 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test(\"HTTP 201\", () => pm.response.to.have.status(201));",
-                  "pm.test(\"crea 3 inscripciones\", () => pm.expect(pm.response.json()).to.have.lengthOf(3));"
+                  "pm.test(\"contiene \\\"estudianteId\\\":5\", () => pm.expect(pm.response.text()).to.include(\"\\\"estudianteId\\\":5\"));"
                 ]
               }
             }
@@ -1386,8 +2051,65 @@
             "url": "{{baseUrl}}/inscripciones",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"estudianteId\": 1,\n  \"periodo\": \"2026-2\",\n  \"materiaIds\": [6,7,8]\n}"
+              "raw": "{\n  \"estudianteId\": 5,\n  \"periodo\": \"2026-2\",\n  \"materiaIds\": [{{materiaId}}]\n}"
             }
+          }
+        }
+      ],
+      "description": "Postman ejecuta los requests en secuencia; la concurrencia se logra con dos pm.sendRequest sin await."
+    },
+    {
+      "name": "09 Inscripciones - camino feliz y cancelación",
+      "item": [
+        {
+          "name": "Laura inscribe sus 8 Sugerida → 201",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\", () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set(\"lauraInscId\", pm.response.json()[0].id);",
+                  "pm.test(\"crea 8 inscripciones\", () => pm.expect(pm.response.json()).to.have.lengthOf(8));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/inscripciones",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estudianteId\": 1,\n  \"periodo\": \"2026-2\",\n  \"codigosMaterias\": [\"603601\", \"603602\", \"603603\", \"603604\", \"603605\", \"603606\", \"603701\", \"603703\"]\n}"
+            }
+          }
+        },
+        {
+          "name": "La sugerencia omite las inscritas",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"contiene \\\"codigo\\\":\\\"603702\\\"\", () => pm.expect(pm.response.text()).to.include(\"\\\"codigo\\\":\\\"603702\\\"\"));",
+                  "pm.test(\"no contiene \\\"codigo\\\":\\\"603601\\\"\", () => pm.expect(pm.response.text()).to.not.include(\"\\\"codigo\\\":\\\"603601\\\"\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/estudiantes/1/sugerencia"
           }
         },
         {
@@ -1415,12 +2137,71 @@
             "url": "{{baseUrl}}/inscripciones",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"estudianteId\": 1,\n  \"periodo\": \"2026-2\",\n  \"materiaIds\": [6]\n}"
+              "raw": "{\n  \"estudianteId\": 1,\n  \"periodo\": \"2026-2\",\n  \"codigosMaterias\": [\"603601\"]\n}"
             }
           }
         },
         {
-          "name": "Cancelar inscripción de Carlos (ALG201)",
+          "name": "Camila 801-803 sin la adeudada (no obligatoria) → 201",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\", () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set(\"camilaInscId\", pm.response.json()[0].id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/inscripciones",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estudianteId\": 3,\n  \"periodo\": \"2026-2\",\n  \"codigosMaterias\": [\"603801\", \"603802\", \"603803\"]\n}"
+            }
+          }
+        },
+        {
+          "name": "Camila 305 con 3 extras activas → 422 (activas cuentan)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 422\", () => pm.response.to.have.status(422));",
+                  "pm.test(\"contiene LIMITE_SIGUIENTE_SEMESTRE_EXCEDIDO\", () => pm.expect(pm.response.text()).to.include(\"LIMITE_SIGUIENTE_SEMESTRE_EXCEDIDO\"));",
+                  "pm.test(\"contiene \\\"used\\\":3\", () => pm.expect(pm.response.text()).to.include(\"\\\"used\\\":3\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/inscripciones",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estudianteId\": 3,\n  \"periodo\": \"2026-2\",\n  \"codigosMaterias\": [\"603305\"]\n}"
+            }
+          }
+        },
+        {
+          "name": "Cancelar una extra de Camila",
           "event": [
             {
               "listen": "test",
@@ -1435,7 +2216,114 @@
           "request": {
             "method": "DELETE",
             "header": [],
-            "url": "{{baseUrl}}/inscripciones/2"
+            "url": "{{baseUrl}}/inscripciones/{{camilaInscId}}"
+          }
+        },
+        {
+          "name": "Camila 305 tras liberar tope → 201",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\", () => pm.response.to.have.status(201));",
+                  "pm.test(\"contiene \\\"codigo\\\":\\\"603305\\\"\", () => pm.expect(pm.response.text()).to.include(\"\\\"codigo\\\":\\\"603305\\\"\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/inscripciones",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estudianteId\": 3,\n  \"periodo\": \"2026-2\",\n  \"codigosMaterias\": [\"603305\"]\n}"
+            }
+          }
+        },
+        {
+          "name": "Sofía inscribe 603801 → 201",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\", () => pm.response.to.have.status(201));",
+                  "pm.test(\"contiene \\\"materiaId\\\":39\", () => pm.expect(pm.response.text()).to.include(\"\\\"materiaId\\\":39\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/inscripciones",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estudianteId\": 4,\n  \"periodo\": \"2026-2\",\n  \"codigosMaterias\": [\"603801\"]\n}"
+            }
+          }
+        },
+        {
+          "name": "Cruce con materia ya inscrita (603902 vs 603801) → 422",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 422\", () => pm.response.to.have.status(422));",
+                  "pm.test(\"contiene CRUCE_HORARIO\", () => pm.expect(pm.response.text()).to.include(\"CRUCE_HORARIO\"));",
+                  "pm.test(\"contiene \\\"conflictsWith\\\":\\\"603801\\\"\", () => pm.expect(pm.response.text()).to.include(\"\\\"conflictsWith\\\":\\\"603801\\\"\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/inscripciones",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estudianteId\": 4,\n  \"periodo\": \"2026-2\",\n  \"codigosMaterias\": [\"603902\"]\n}"
+            }
+          }
+        },
+        {
+          "name": "Cancelar inscripción de Laura",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 204\", () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/inscripciones/{{lauraInscId}}"
           }
         },
         {
@@ -1455,7 +2343,7 @@
           "request": {
             "method": "DELETE",
             "header": [],
-            "url": "{{baseUrl}}/inscripciones/2"
+            "url": "{{baseUrl}}/inscripciones/{{lauraInscId}}"
           }
         },
         {
@@ -1475,11 +2363,11 @@
           "request": {
             "method": "DELETE",
             "header": [],
-            "url": "{{baseUrl}}/inscripciones/999"
+            "url": "{{baseUrl}}/inscripciones/999999"
           }
         },
         {
-          "name": "Reinscribir después de cancelar (cupo liberado)",
+          "name": "Reinscribir después de cancelar",
           "event": [
             {
               "listen": "test",
@@ -1487,7 +2375,7 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test(\"HTTP 201\", () => pm.response.to.have.status(201));",
-                  "pm.test(\"contiene \\\"materiaId\\\":9\", () => pm.expect(pm.response.text()).to.include(\"\\\"materiaId\\\":9\"));"
+                  "pm.test(\"contiene \\\"materiaId\\\":27\", () => pm.expect(pm.response.text()).to.include(\"\\\"materiaId\\\":27\"));"
                 ]
               }
             }
@@ -1503,14 +2391,14 @@
             "url": "{{baseUrl}}/inscripciones",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"estudianteId\": 2,\n  \"periodo\": \"2026-2\",\n  \"materiaIds\": [9]\n}"
+              "raw": "{\n  \"estudianteId\": 1,\n  \"periodo\": \"2026-2\",\n  \"codigosMaterias\": [\"603601\"]\n}"
             }
           }
         }
       ]
     },
     {
-      "name": "09 Borrados",
+      "name": "10 Borrados",
       "item": [
         {
           "name": "Borrar materia con inscripciones → 409",
@@ -1642,7 +2530,7 @@
       ]
     },
     {
-      "name": "10 Errores del framework (ProblemDetails)",
+      "name": "11 Errores del framework (ProblemDetails)",
       "item": [
         {
           "name": "Ruta inexistente → 404",
