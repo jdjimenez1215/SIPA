@@ -27,7 +27,7 @@
    0 · CONFIGURACIÓN
    ============================================================ */
 const API_CONFIG = {
-  baseURL: 'http://localhost:3000',          // origen del microservicio
+  baseURL: '',                               // el proxy local reenvía a la API
   endpoints: {
     sugerencia: '/api/v1/matricula/sugerencia',
     confirmar:  '/api/v1/matricula/confirmar'
@@ -70,6 +70,14 @@ const MOCK_SUGERENCIA = {
 };
 
 const MatriculaApi = {
+  _headers(includeJson = false) {
+    const token = sessionStorage.getItem('sipa.auth.token');
+    const headers = { 'Accept': 'application/json' };
+    if (includeJson) headers['Content-Type'] = 'application/json';
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    return headers;
+  },
+
   /**
    * GET /api/v1/matricula/sugerencia
    * @returns {Promise<Object>} { nombreEstudiante, programa, semestreActual,
@@ -84,10 +92,7 @@ const MatriculaApi = {
 
     const respuesta = await fetch(`${API_CONFIG.baseURL}${API_CONFIG.endpoints.sugerencia}`, {
       method: 'GET',
-      headers: {
-        'Accept': 'application/json'
-        // 'Authorization': `Bearer ${token}`   // ← JWT cuando exista sesión
-      }
+      headers: this._headers()
     });
     if (!respuesta.ok) {
       throw new Error(`HTTP ${respuesta.status} en GET ${API_CONFIG.endpoints.sugerencia}`);
@@ -112,11 +117,7 @@ const MatriculaApi = {
 
     const respuesta = await fetch(`${API_CONFIG.baseURL}${API_CONFIG.endpoints.confirmar}`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-        // 'Authorization': `Bearer ${token}`
-      },
+      headers: this._headers(true),
       body: JSON.stringify(payload)
     });
     if (!respuesta.ok) {

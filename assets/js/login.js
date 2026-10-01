@@ -22,7 +22,7 @@
    0 · CONFIGURACIÓN / CONTRATO
    ============================================================ */
 const LOGIN_CONFIG = {
-  baseURL: 'http://localhost:3000/api',   // misma base que API_CONFIG (app.js)
+  baseURL: '/api',
   endpoints: {
     login:             '/auth/login',
     recuperarPassword: '/auth/recuperar-password',
@@ -44,7 +44,7 @@ const LoginApi = {
    * @returns {Promise<Object>} { token, usuario: { codigo, nombreCompleto, rol } }
    */
   async autenticar(usuario, password) {
-    return this._post(LOGIN_CONFIG.endpoints.login, { usuario, password });
+    return this._post(LOGIN_CONFIG.endpoints.login, { usernameOrEmail: usuario, password });
   },
 
   /**
@@ -79,6 +79,7 @@ const LoginApi = {
     if (!respuesta.ok) {
       const error = new Error(`HTTP ${respuesta.status} en POST ${ruta}`);
       error.status = respuesta.status;   // la UI distingue 401 / 404 / 429
+      error.body = await respuesta.text();
       throw error;
     }
     return respuesta.json();
@@ -182,14 +183,25 @@ const LoginApp = {
     LoginUI.limpiarMensaje();
     try {
       const sesion = await LoginApi.autenticar(usuario, password);
-      // El backend devuelve { token, usuario }. Guardar aquí la sesión
-      // (localStorage / cookie) según defina el equipo de backend.
-      const nombre = (sesion && sesion.usuario && sesion.usuario.nombreCompleto) || usuario;
+      const token = sesion && (sesion.token || sesion.appToken || sesion.accessToken);
+      if (!token) {
+        throw new Error('La respuesta de autenticación no contiene un token.');
+      }
+      sessionStorage.setItem('sipa.auth.token', token);
+      if (sesion.usuario) {
+        sessionStorage.setItem('sipa.auth.user', JSON.stringify(sesion.usuario));
+      } else if (sesion.user) {
+        sessionStorage.setItem('sipa.auth.user', JSON.stringify(sesion.user));
+      }
+      const usuarioRespuesta = sesion.usuario || sesion.user;
+      const nombre = (usuarioRespuesta && (usuarioRespuesta.nombreCompleto || usuarioRespuesta.fullName || usuarioRespuesta.email)) || usuario;
       LoginUI.mostrarMensaje('success', `Autenticación correcta. Bienvenido(a) ${nombre}.`);
       setTimeout(() => { window.location.href = LOGIN_CONFIG.rutaTrasLogin; }, 300);
     } catch (error) {
       console.error('[SIPA] Error de autenticación:', error);
-      if (error.status === 401) {
+      const credencialesInvalidas = error.status === 401 ||
+        (error.status === 500 && /invalid credentials|credenciales inválidas/i.test(error.body || ''));
+      if (credencialesInvalidas) {
         LoginUI.mostrarMensaje('error', 'Usuario o contraseña incorrectos.');
       } else if (error.status === 429) {
         LoginUI.mostrarMensaje('error', 'Demasiados intentos. Intente de nuevo en unos minutos.');
