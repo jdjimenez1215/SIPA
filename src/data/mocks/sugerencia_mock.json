@@ -2,7 +2,7 @@
   "nombreEstudiante": "Laura Gómez Ríos",
   "programa": "Ingeniería de Sistemas",
   "semestreActual": 6,
-  "totalCreditos": 26,
+  "totalCreditos": 23,
   "materiasSugeridas": [
     {
       "codigo": "603601",
@@ -65,8 +65,8 @@
       "nombre": "Tecnologías Avanzadas",
       "creditos": 3,
       "semestre": 7,
-      "estado": "Sugerida",
-      "prerrequisitoCumplido": true
+      "estado": "Prerrequisito",
+      "prerrequisitoCumplido": false
     },
     {
       "codigo": "603703",
@@ -82,7 +82,7 @@
       "creditos": 3,
       "semestre": 7,
       "estado": "Prerrequisito",
-      "prerrequisitoCumplido": true
+      "prerrequisitoCumplido": false
     },
     {
       "codigo": "603705",
@@ -90,7 +90,7 @@
       "creditos": 3,
       "semestre": 7,
       "estado": "Prerrequisito",
-      "prerrequisitoCumplido": true
+      "prerrequisitoCumplido": false
     },
     {
       "codigo": "603706",
@@ -98,7 +98,7 @@
       "creditos": 3,
       "semestre": 7,
       "estado": "Prerrequisito",
-      "prerrequisitoCumplido": true
+      "prerrequisitoCumplido": false
     }
   ],
   "notificaciones": [

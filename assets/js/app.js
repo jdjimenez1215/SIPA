@@ -49,7 +49,7 @@ const MOCK_SUGERENCIA = {
   nombreEstudiante: 'Laura Gómez Ríos',
   programa: 'Ingeniería de Sistemas',
   semestreActual: 6,
-  totalCreditos: 26,
+  totalCreditos: 23,
   materiasSugeridas: [
     // Semestre N (6) — sugeridas
     { codigo: '603601', nombre: 'Ingeniería de Software II',                creditos: 3, semestre: 6, estado: 'Sugerida',     prerrequisitoCumplido: true },
@@ -58,14 +58,14 @@ const MOCK_SUGERENCIA = {
     { codigo: '603604', nombre: 'Optimización',                             creditos: 3, semestre: 6, estado: 'Sugerida',     prerrequisitoCumplido: true },
     { codigo: '603605', nombre: 'Redes de Computadores',                    creditos: 4, semestre: 6, estado: 'Sugerida',     prerrequisitoCumplido: true },
     { codigo: '603606', nombre: 'Administración Financiera para Ingeniería', creditos: 2, semestre: 6, estado: 'Sugerida',     prerrequisitoCumplido: true },
-    // Regla N+3: exactamente 3 asignaturas del semestre 7
+    // Semestre N+1: solo entran las que tienen prerrequisito aprobado
     { codigo: '603701', nombre: 'Metodología de Investigación',             creditos: 3, semestre: 7, estado: 'Sugerida',     prerrequisitoCumplido: true },
-    { codigo: '603702', nombre: 'Tecnologías Avanzadas',                    creditos: 3, semestre: 7, estado: 'Sugerida',     prerrequisitoCumplido: true },
+    { codigo: '603702', nombre: 'Tecnologías Avanzadas',                    creditos: 3, semestre: 7, estado: 'Prerrequisito', prerrequisitoCumplido: false },
     { codigo: '603703', nombre: 'Ética y Humanística',                      creditos: 2, semestre: 7, estado: 'Sugerida',     prerrequisitoCumplido: true },
-    // Filas bloqueadas por cupo: no suman al totalCreditos
-    { codigo: '603704', nombre: 'Sistemas Distribuidos',                   creditos: 3, semestre: 7, estado: 'Prerrequisito', prerrequisitoCumplido: true },
-    { codigo: '603705', nombre: 'Seguridad de la Información',              creditos: 3, semestre: 7, estado: 'Prerrequisito', prerrequisitoCumplido: true },
-    { codigo: '603706', nombre: 'Formulación y Gestión de Proyectos TI',    creditos: 3, semestre: 7, estado: 'Prerrequisito', prerrequisitoCumplido: true }
+    // Filas bloqueadas por prerrequisito no aprobado: no suman al totalCreditos
+    { codigo: '603704', nombre: 'Sistemas Distribuidos',                   creditos: 3, semestre: 7, estado: 'Prerrequisito', prerrequisitoCumplido: false },
+    { codigo: '603705', nombre: 'Seguridad de la Información',              creditos: 3, semestre: 7, estado: 'Prerrequisito', prerrequisitoCumplido: false },
+    { codigo: '603706', nombre: 'Formulación y Gestión de Proyectos TI',    creditos: 3, semestre: 7, estado: 'Prerrequisito', prerrequisitoCumplido: false }
   ],
   notificaciones: [
     { id: 1, titulo: 'Matrícula habilitada', mensaje: 'Tu periodo de matrícula N+3 está abierto.', fecha: '2026-09-30T08:00:00', leida: false }

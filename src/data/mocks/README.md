@@ -47,7 +47,7 @@ tradujeron a código, que es lo que necesita la regla.
 
 **Laura Gómez Ríos** (`1045123456`), semestre actual **6**.
 
-Ha aprobado **los 26 asignaturas de los semestres 1 a 5** (87 créditos), que es lo
+Ha aprobado **las 26 asignaturas de los semestres 1 a 5** (87 créditos), que es lo
 que corresponde a alguien que va a *entrar* al semestre 6:
 
 | Sem | Asignaturas aprobadas |
@@ -67,38 +67,62 @@ de prerrequisitos sería coherente.
 La respuesta que el frontend espera. **No es una entrada más**: funciona como
 fixture de comparación, y la API debe producir un JSON idéntico a este.
 
-12 filas y `totalCreditos: 26`.
+12 filas y `totalCreditos: 23`.
 
 ---
 
 ## Cómo se calcula la regla N+3
 
 El microservicio implementa esta lógica; los JSON solo proveen los datos.
-La clave es entender que **el semestre N y el N+1 se cursan en el mismo
-periodo**, lo que permite que una materia de N+1 tenga como prerrequisito una
-materia de N que se está tomando a la vez.
+
+Una estudiante en el semestre N recibe **todo el semestre N** más hasta **3
+asignaturas extra en total**. Ese cupo de 3 es **compartido** entre dos grupos:
+
+1. **Adeudadas**: asignaturas de semestres menores a N que no están aprobadas
+   (incluida una `Reprobada`). Tienen **prioridad**: se sugieren primero, pero
+   no son obligatorias.
+2. **Semestre N+1**: se sugieren con lo que quede del cupo.
+
+Dentro de cada grupo el orden es ascendente por `codigo`. Si N es el último
+semestre, no hay filas de N+1.
+
+### Prerrequisitos estrictos
+
+Un prerrequisito se cumple **solo si la asignatura está `APROBADO` en el
+historial**. No hay co-sugerencia: que una asignatura se esté sugiriendo en este
+mismo periodo **no** satisface el prerrequisito de otra, porque todavía no está
+aprobada.
+
+Cada fila se clasifica así (las bloqueadas **siguen apareciendo** en la
+respuesta; el frontend las pinta con badge ámbar):
+
+| Situación | `estado` | `prerrequisitoCumplido` |
+|---|---|---|
+| Prerrequisito aprobado y entra en la sugerencia | `Sugerida` | `true` |
+| Prerrequisito aprobado pero se pasó del cupo de 3 | `Prerrequisito` | `true` |
+| Prerrequisito no aprobado | `Prerrequisito` | `false` |
+
+### El caso de Laura (semestre 6, 26 aprobadas de los semestres 1 a 5)
 
 ```
-Semestre 6 completo          →  603601  603602  603603  603604  603605  603606
-Semestre 7, máximo 3          →  603701  603702  603703
-Semestre 7, bloqueada por cupo →  603704  603705  603706
+Semestre 6 completo           →  603601  603602  603603  603604  603605  603606   (Sugerida)
+Semestre 7, prereq aprobado   →  603701  603703                                    (Sugerida)
+Semestre 7, prereq NO aprobado →  603702  603704  603705  603706                    (Prerrequisito)
 ```
 
-### Por qué 603702 sí entra
+- `603701` entra: su prerrequisito `603502` está aprobado.
+- `603703` entra: no tiene prerrequisitos.
+- `603702` (Tecnologías Avanzadas) queda **bloqueada**: requiere `603601`
+  (Ingeniería de Software II), que **aún no está aprobada** (apenas se sugiere
+  este periodo). Por eso `prerrequisitoCumplido` es `false`.
+- `603704`, `603705` y `603706` quedan bloqueadas por prerrequisito: requieren
+  `603605` (las dos primeras) y `603606` (la última), que son del semestre 6 y
+  todavía no están aprobadas.
 
-`603702` (Tecnologías Avanzadas) requiere `603601` (Ingeniería de Software II).
-`603601` no está aprobada, pero **se está sugiriendo en el mismo periodo**, así
-que el prerrequisito se considera cumplido.
-
-### Por qué 603704 queda bloqueada
-
-`603704` (Sistemas Distribuidos) requiere `603605`, que sí está aprobada, así que
-`prerrequisitoCumplido` es `true`. Aun así la fila aparece como
-`estado: "Prerrequisito"`: las tres primeras del semestre 7 ya consumieron el
-cupo de la regla N+3.
-
-Aparece en la respuesta **a propósito**: el frontend la pinta con badge ámbar
-para que el usuario vea qué queda pendiente, no la omite.
+Laura no tiene adeudadas y solo **2** asignaturas de N+1 son elegibles, así que
+el tope de 3 no se alcanza: **este fixture no ejercita el caso "prerrequisito
+cumplido pero fuera de cupo"**. Esa rama la cubre la reimplementación de la
+regla en las pruebas, no el mock.
 
 ### La suma de créditos
 
@@ -106,12 +130,12 @@ para que el usuario vea qué queda pendiente, no la omite.
 
 ```
 sem 6:  3 + 3 + 3 + 3 + 4 + 2  = 18
-sem 7:  3 + 3 + 2              =  8
-                                   ───
-                                   26
+sem 7:  3 + 2                  =  5     (603701 y 603703)
+                                  ───
+                                  23
 ```
 
-Las tres filas bloqueadas aportan 0. Esta es la trampa más fácil de este
+Las cuatro filas bloqueadas aportan 0. Esta es la trampa más fácil de este
 contrato: sumar los créditos de todas las filas da 35, que es incorrecto.
 
 ---
@@ -163,7 +187,7 @@ Cada regla de negocio tiene un caso que la ejercita:
 
 | Caso | Código esperado |
 |---|---|
-| `GET /api/v1/matricula/sugerencia` | 200, 12 filas, 26 créditos |
+| `GET /api/v1/matricula/sugerencia` | 200, 12 filas, 23 créditos |
 | Confirmar selección válida | 201 |
 | Pedir 4 asignaturas del semestre 7 | 422 |
 | Pedir `603602` sin `603503` aprobado | 422 |
@@ -186,14 +210,14 @@ node src/pruebas/validar-mocks.mjs
 
 Sale con código 1 si algo falla, así que se puede encadenar en CI.
 
-Qué verifica, en 31 comprobaciones:
+Qué verifica, en 36 comprobaciones:
 
 | Grupo | Qué comprueba |
 |---|---|
 | 1. Malla | 53 asignaturas, 165 créditos, 10 semestres, códigos únicos de 6 dígitos, todo prerrequisito existe y es de un semestre anterior |
 | 2. Estudiante | Códigos válidos, notas en rango, ninguna asignatura del semestre 6 aprobada, y que estén aprobados los prerrequisitos del semestre 6 **y los heredados de esos** |
-| 3. Contrato | `totalCreditos` suma solo las filas `Sugerida`, máximo 3 filas de N+1, nombres y créditos coinciden con la malla |
-| 4. Regla N+3 | Recalcula la sugerencia desde la malla y el historial, y exige que coincida con el fixture en asignaturas, orden, estado y créditos |
+| 3. Contrato | `totalCreditos` suma solo las filas `Sugerida`, máximo 3 filas `Sugerida` entre adeudadas y N+1 (cupo compartido), nombres y créditos coinciden con la malla |
+| 4. Regla N+3 | Recalcula la sugerencia con prerrequisitos estrictos y cupo compartido (adeudadas primero), y exige que coincida con el fixture en asignaturas, orden, estado y créditos; además fija `totalCreditos` de Laura en 23 y 603702 bloqueada |
 | 5. Integración | El `MOCK_SUGERENCIA` de `assets/js/app.js` es idéntico a `sugerencia_mock.json` |
 
 El grupo 4 reimplementa la regla a propósito. Si el fixture dejara de ser lo que

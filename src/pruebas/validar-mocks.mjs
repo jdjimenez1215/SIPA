@@ -24,7 +24,7 @@ const sugerencia = mocks('sugerencia_mock.json');
 const ASIGNATURAS_ESPERADAS = 53;
 const CREDITOS_ESPERADOS = 165;
 const SEMESTRES_ESPERADOS = 10;
-const MAXIMO_N1 = 3;
+const CUPO_EXTRA = 3; // regla N+3: tope TOTAL de filas extra (adeudadas + N+1)
 
 let fallos = 0;
 let total = 0;
@@ -174,9 +174,11 @@ revisar(
   filas.every((f) => ['Sugerida', 'Prerrequisito'].includes(f.estado)),
 );
 revisar('no hay filas repetidas', new Set(filas.map((f) => f.codigo)).size === filas.length);
+const extrasSugeridas = filas.filter((f) => f.semestre !== n && f.estado === 'Sugerida');
 revisar(
-  `como maximo ${MAXIMO_N1} filas Sugerida del semestre N+1`,
-  filas.filter((f) => f.semestre === n + 1 && f.estado === 'Sugerida').length === MAXIMO_N1,
+  `como maximo ${CUPO_EXTRA} filas Sugerida entre adeudadas y N+1 (cupo compartido)`,
+  extrasSugeridas.length <= CUPO_EXTRA,
+  `hay ${extrasSugeridas.length}`,
 );
 
 const sumaSugerida = filas.filter((f) => f.estado === 'Sugerida').reduce((s, f) => s + f.creditos, 0);
@@ -191,8 +193,9 @@ revisar(
   'si coincidiera, el fixture no probaria la trampa del contrato',
 );
 
-/* Una fila no puede decir que cumple un prerrequisito que no cumple:
- * lo unico que puede impedir la matricula es el cupo de N+1. */
+/* Prerrequisitos estrictos: una fila Sugerida siempre los cumple. Una fila
+ * Prerrequisito puede tener prerrequisitoCumplido=true solo si quedo fuera
+ * por el cupo de 3, y eso solo puede pasar en las filas extra (no en N). */
 revisar(
   'prerrequisitoCumplido es coherente con el estado',
   filas
@@ -200,7 +203,7 @@ revisar(
     .every((f) => f.prerrequisitoCumplido === true) &&
     filas
       .filter((f) => f.estado === 'Prerrequisito')
-      .every((f) => f.prerrequisitoCumplido === false || f.semestre === n + 1),
+      .every((f) => f.prerrequisitoCumplido === false || f.semestre !== n),
 );
 
 /* ============================================================
@@ -208,29 +211,42 @@ revisar(
  * ============================================================ */
 grupo('4. La sugerencia es la que produce la regla N+3');
 
-/* Reimplementacion de ReglaN3.Calcular. Se repite aqui a proposito: si el
- * fixture dejara de ser lo que la regla produce, el contrato se rompio y el
- * error se veria aca sin necesidad de levantar el backend. */
+/* Reimplementacion de ReglaN3.Calcular con la regla acordada:
+ *  - Se sugiere TODO el semestre N.
+ *  - Cupo extra de 3 filas, COMPARTIDO entre adeudadas (semestres < N sin
+ *    aprobar, incluida Reprobada) y semestre N+1. Las adeudadas van primero
+ *    (prioridad, no obligatorias); dentro de cada grupo, orden de codigo.
+ *  - Prerrequisitos ESTRICTOS: solo cuentan las asignaturas APROBADAS del
+ *    historial. Lo que se sugiere en este mismo periodo NO los satisface.
+ *  - Si N es el ultimo semestre no hay filas N+1.
+ * Se repite aqui a proposito: si el fixture dejara de ser lo que la regla
+ * produce, el contrato se rompio y el error se ve sin levantar el backend. */
 function reglaN3(catalogo, semestreActual, codigosAprobados) {
-  const disponibles = new Set(codigosAprobados);
+  const ultimo = Math.max(...catalogo.map((x) => x.semestre));
+  const porCodigoAsc = (x, y) => x.codigo.localeCompare(y.codigo);
+  const cumplePrereq = (a) => a.prerrequisitos.every((p) => codigosAprobados.has(p));
+  const fila = (a, estado, cumple) => ({ codigo: a.codigo, semestre: a.semestre, creditos: a.creditos, estado, cumple });
+
   const salida = [];
 
-  for (const a of catalogo.filter((x) => x.semestre === semestreActual)) {
-    if (disponibles.has(a.codigo)) continue;
-    const cumple = a.prerrequisitos.every((p) => disponibles.has(p));
-    salida.push({ codigo: a.codigo, semestre: a.semestre, creditos: a.creditos, cumple });
-    if (cumple) disponibles.add(a.codigo);
+  for (const a of catalogo.filter((x) => x.semestre === semestreActual).sort(porCodigoAsc)) {
+    if (codigosAprobados.has(a.codigo)) continue;
+    const cumple = cumplePrereq(a);
+    salida.push(fila(a, cumple ? 'Sugerida' : 'Prerrequisito', cumple));
   }
 
-  let cupo = MAXIMO_N1;
-  for (const a of catalogo.filter((x) => x.semestre === semestreActual + 1)) {
-    const cumple = a.prerrequisitos.every((p) => disponibles.has(p));
+  const adeudadas = catalogo
+    .filter((x) => x.semestre < semestreActual && !codigosAprobados.has(x.codigo))
+    .sort(porCodigoAsc);
+  const siguientes =
+    semestreActual < ultimo ? catalogo.filter((x) => x.semestre === semestreActual + 1).sort(porCodigoAsc) : [];
+
+  let cupo = CUPO_EXTRA;
+  for (const a of [...adeudadas, ...siguientes]) {
+    const cumple = cumplePrereq(a);
     const entra = cumple && cupo > 0;
-    salida.push({ codigo: a.codigo, semestre: a.semestre, creditos: a.creditos, entra, cumple });
-    if (entra) {
-      disponibles.add(a.codigo);
-      cupo--;
-    }
+    if (entra) cupo--;
+    salida.push(fila(a, entra ? 'Sugerida' : 'Prerrequisito', cumple));
   }
   return salida;
 }
@@ -243,22 +259,39 @@ revisar(
   `esperado=${esperado.map((e) => e.codigo).join(',')} | fixture=${filas.map((f) => f.codigo).join(',')}`,
 );
 
-const estadoEsperado = new Map(
-  esperado.map((e) => [e.codigo, e.entra === undefined ? e.cumple : e.entra]),
-);
-const cumploEsperado = new Map(esperado.map((e) => [e.codigo, e.cumple]));
+const esperadoPorCodigo = new Map(esperado.map((e) => [e.codigo, e]));
 
 revisar(
   'mismos estados y mismos prerrequisitoCumplido',
-  filas.every(
-    (f) =>
-      f.estado === (estadoEsperado.get(f.codigo) ? 'Sugerida' : 'Prerrequisito') &&
-      f.prerrequisitoCumplido === cumploEsperado.get(f.codigo),
-  ),
+  filas.every((f) => {
+    const e = esperadoPorCodigo.get(f.codigo);
+    return e && f.estado === e.estado && f.prerrequisitoCumplido === e.cumple;
+  }),
 );
 
-const creditosEsperados = esperado.filter((e) => e.entra !== false).reduce((s, e) => s + e.creditos, 0);
+const creditosEsperados = esperado.filter((e) => e.estado === 'Sugerida').reduce((s, e) => s + e.creditos, 0);
 revisar('totalCreditos coincide con la regla', sugerencia.totalCreditos === creditosEsperados, `${sugerencia.totalCreditos} vs ${creditosEsperados}`);
+revisar('totalCreditos de Laura es 23', sugerencia.totalCreditos === 23, `es ${sugerencia.totalCreditos}`);
+
+const f603702 = filas.find((f) => f.codigo === '603702');
+revisar(
+  '603702 bloqueada: requiere 603601, que aun no esta aprobada (sin co-sugerencia)',
+  f603702?.estado === 'Prerrequisito' && f603702.prerrequisitoCumplido === false,
+);
+
+const bloqueadasPorPrereq = ['603704', '603705', '603706'].map((c) => filas.find((f) => f.codigo === c));
+revisar(
+  '603704, 603705 y 603706 bloqueadas por prerrequisito no aprobado',
+  bloqueadasPorPrereq.every((f) => f?.estado === 'Prerrequisito' && f.prerrequisitoCumplido === false),
+);
+
+revisar(
+  'las filas Sugerida del semestre N+1 son solo 603701 y 603703',
+  filas.filter((f) => f.semestre === n + 1 && f.estado === 'Sugerida').map((f) => f.codigo).join(',') === '603701,603703',
+);
+
+const extrasRegla = esperado.filter((e) => e.semestre !== n && e.estado === 'Sugerida').length;
+revisar(`entre adeudadas y N+1 hay como maximo ${CUPO_EXTRA} Sugerida (regla)`, extrasRegla <= CUPO_EXTRA, `hay ${extrasRegla}`);
 
 /* ============================================================
  * 5. Integracion con el mock del frontend
