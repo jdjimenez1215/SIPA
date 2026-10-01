@@ -46,23 +46,26 @@ const API_CONFIG = {
    Existe solo para probar la inyección sin backend; desaparece al
    poner API_CONFIG.useMock = false. */
 const MOCK_SUGERENCIA = {
-  nombreEstudiante: 'Juan Diego JImenez',
+  nombreEstudiante: 'Laura Gómez Ríos',
   programa: 'Ingeniería de Sistemas',
   semestreActual: 6,
-  totalCreditos: 27,
+  totalCreditos: 26,
   materiasSugeridas: [
     // Semestre N (6) — sugeridas
-    { codigo: 'INF-201', nombre: 'Bases de Datos II',          creditos: 4, semestre: 6, estado: 'Sugerida',     prerrequisitoCumplido: true },
-    { codigo: 'INF-202', nombre: 'Sistemas Operativos',        creditos: 4, semestre: 6, estado: 'Sugerida',     prerrequisitoCumplido: true },
-    { codigo: 'INF-203', nombre: 'Redes de Computadores',      creditos: 3, semestre: 6, estado: 'Sugerida',     prerrequisitoCumplido: true },
-    { codigo: 'MAT-204', nombre: 'Probabilidad y Estadística', creditos: 3, semestre: 6, estado: 'Sugerida',     prerrequisitoCumplido: true },
-    { codigo: 'INF-204', nombre: 'Ingeniería de Software I',   creditos: 4, semestre: 6, estado: 'Sugerida',     prerrequisitoCumplido: true },
+    { codigo: '603601', nombre: 'Ingeniería de Software II',                creditos: 3, semestre: 6, estado: 'Sugerida',     prerrequisitoCumplido: true },
+    { codigo: '603602', nombre: 'Métodos Numéricos',                        creditos: 3, semestre: 6, estado: 'Sugerida',     prerrequisitoCumplido: true },
+    { codigo: '603603', nombre: 'Procesamiento de Señales e Imágenes',      creditos: 3, semestre: 6, estado: 'Sugerida',     prerrequisitoCumplido: true },
+    { codigo: '603604', nombre: 'Optimización',                             creditos: 3, semestre: 6, estado: 'Sugerida',     prerrequisitoCumplido: true },
+    { codigo: '603605', nombre: 'Redes de Computadores',                    creditos: 4, semestre: 6, estado: 'Sugerida',     prerrequisitoCumplido: true },
+    { codigo: '603606', nombre: 'Administración Financiera para Ingeniería', creditos: 2, semestre: 6, estado: 'Sugerida',     prerrequisitoCumplido: true },
     // Regla N+3: exactamente 3 asignaturas del semestre 7
-    { codigo: 'INF-301', nombre: 'Inteligencia Artificial',    creditos: 3, semestre: 7, estado: 'Sugerida',     prerrequisitoCumplido: true },
-    { codigo: 'INF-302', nombre: 'Gerencia de Proyectos TI',   creditos: 3, semestre: 7, estado: 'Sugerida',     prerrequisitoCumplido: true },
-    { codigo: 'INF-303', nombre: 'Seguridad Informática',      creditos: 3, semestre: 7, estado: 'Sugerida',     prerrequisitoCumplido: true },
-    // Fila bloqueada: no suma al totalCreditos
-    { codigo: 'INF-304', nombre: 'Taller de Grado I',          creditos: 4, semestre: 7, estado: 'Prerrequisito', prerrequisitoCumplido: false }
+    { codigo: '603701', nombre: 'Metodología de Investigación',             creditos: 3, semestre: 7, estado: 'Sugerida',     prerrequisitoCumplido: true },
+    { codigo: '603702', nombre: 'Tecnologías Avanzadas',                    creditos: 3, semestre: 7, estado: 'Sugerida',     prerrequisitoCumplido: true },
+    { codigo: '603703', nombre: 'Ética y Humanística',                      creditos: 2, semestre: 7, estado: 'Sugerida',     prerrequisitoCumplido: true },
+    // Filas bloqueadas por cupo: no suman al totalCreditos
+    { codigo: '603704', nombre: 'Sistemas Distribuidos',                   creditos: 3, semestre: 7, estado: 'Prerrequisito', prerrequisitoCumplido: true },
+    { codigo: '603705', nombre: 'Seguridad de la Información',              creditos: 3, semestre: 7, estado: 'Prerrequisito', prerrequisitoCumplido: true },
+    { codigo: '603706', nombre: 'Formulación y Gestión de Proyectos TI',    creditos: 3, semestre: 7, estado: 'Prerrequisito', prerrequisitoCumplido: true }
   ],
   notificaciones: [
     { id: 1, titulo: 'Matrícula habilitada', mensaje: 'Tu periodo de matrícula N+3 está abierto.', fecha: '2026-09-30T08:00:00', leida: false }

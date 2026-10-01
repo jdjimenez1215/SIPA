@@ -1,0 +1,440 @@
+{
+  "programa": "Ingeniería de Sistemas",
+  "asignaturas": [
+    {
+      "codigo": "603101",
+      "nombre": "Algoritmia y Programación",
+      "creditos": 4,
+      "semestre": 1,
+      "prerrequisitos": []
+    },
+    {
+      "codigo": "603102",
+      "nombre": "Introducción a la Ingeniería de Sistemas",
+      "creditos": 4,
+      "semestre": 1,
+      "prerrequisitos": []
+    },
+    {
+      "codigo": "603103",
+      "nombre": "Cálculo Diferencial",
+      "creditos": 4,
+      "semestre": 1,
+      "prerrequisitos": []
+    },
+    {
+      "codigo": "603104",
+      "nombre": "Desarrollo del Pensamiento Lógico Matemático",
+      "creditos": 2,
+      "semestre": 1,
+      "prerrequisitos": []
+    },
+    {
+      "codigo": "603105",
+      "nombre": "Procesos Comunicativos",
+      "creditos": 2,
+      "semestre": 1,
+      "prerrequisitos": []
+    },
+    {
+      "codigo": "603201",
+      "nombre": "Programación Orientada A Objetos",
+      "creditos": 4,
+      "semestre": 2,
+      "prerrequisitos": [
+        "603101"
+      ]
+    },
+    {
+      "codigo": "603202",
+      "nombre": "Sistemas Digitales",
+      "creditos": 3,
+      "semestre": 2,
+      "prerrequisitos": []
+    },
+    {
+      "codigo": "603203",
+      "nombre": "Cálculo Integral",
+      "creditos": 4,
+      "semestre": 2,
+      "prerrequisitos": [
+        "603103"
+      ]
+    },
+    {
+      "codigo": "603204",
+      "nombre": "Álgebra Lineal",
+      "creditos": 3,
+      "semestre": 2,
+      "prerrequisitos": []
+    },
+    {
+      "codigo": "603205",
+      "nombre": "Física Mecánica",
+      "creditos": 4,
+      "semestre": 2,
+      "prerrequisitos": [
+        "603103"
+      ]
+    },
+    {
+      "codigo": "603301",
+      "nombre": "Estructuras de Datos",
+      "creditos": 4,
+      "semestre": 3,
+      "prerrequisitos": [
+        "603201"
+      ]
+    },
+    {
+      "codigo": "603302",
+      "nombre": "Máquinas Digitales",
+      "creditos": 3,
+      "semestre": 3,
+      "prerrequisitos": [
+        "603202"
+      ]
+    },
+    {
+      "codigo": "603303",
+      "nombre": "Cálculo Multivariado",
+      "creditos": 4,
+      "semestre": 3,
+      "prerrequisitos": [
+        "603203",
+        "603204"
+      ]
+    },
+    {
+      "codigo": "603304",
+      "nombre": "Electricidad y Magnetismo",
+      "creditos": 4,
+      "semestre": 3,
+      "prerrequisitos": [
+        "603205"
+      ]
+    },
+    {
+      "codigo": "603305",
+      "nombre": "Democracias y Paz",
+      "creditos": 2,
+      "semestre": 3,
+      "prerrequisitos": []
+    },
+    {
+      "codigo": "603401",
+      "nombre": "Bases de Datos",
+      "creditos": 4,
+      "semestre": 4,
+      "prerrequisitos": [
+        "603301"
+      ]
+    },
+    {
+      "codigo": "603402",
+      "nombre": "Sistemas Operativos",
+      "creditos": 4,
+      "semestre": 4,
+      "prerrequisitos": [
+        "603301",
+        "603302"
+      ]
+    },
+    {
+      "codigo": "603403",
+      "nombre": "Ecuaciones Diferenciales y Modelado Matemático",
+      "creditos": 3,
+      "semestre": 4,
+      "prerrequisitos": [
+        "603303"
+      ]
+    },
+    {
+      "codigo": "603404",
+      "nombre": "Estadística y Probabilidad",
+      "creditos": 4,
+      "semestre": 4,
+      "prerrequisitos": [
+        "603303"
+      ]
+    },
+    {
+      "codigo": "603405",
+      "nombre": "Oscilaciones y Ondas",
+      "creditos": 3,
+      "semestre": 4,
+      "prerrequisitos": [
+        "603304"
+      ]
+    },
+    {
+      "codigo": "603501",
+      "nombre": "Ingeniería de Software I",
+      "creditos": 4,
+      "semestre": 5,
+      "prerrequisitos": [
+        "603401"
+      ]
+    },
+    {
+      "codigo": "603502",
+      "nombre": "Pensamiento Sistémico",
+      "creditos": 3,
+      "semestre": 5,
+      "prerrequisitos": []
+    },
+    {
+      "codigo": "603503",
+      "nombre": "Matemáticas Especiales",
+      "creditos": 3,
+      "semestre": 5,
+      "prerrequisitos": [
+        "603403"
+      ]
+    },
+    {
+      "codigo": "603504",
+      "nombre": "Procesos Estocásticos",
+      "creditos": 3,
+      "semestre": 5,
+      "prerrequisitos": [
+        "603404"
+      ]
+    },
+    {
+      "codigo": "603505",
+      "nombre": "Sistemas de Comunicaciones",
+      "creditos": 3,
+      "semestre": 5,
+      "prerrequisitos": [
+        "603405"
+      ]
+    },
+    {
+      "codigo": "603506",
+      "nombre": "Ciencias, Tecnología y Desarrollo",
+      "creditos": 2,
+      "semestre": 5,
+      "prerrequisitos": []
+    },
+    {
+      "codigo": "603601",
+      "nombre": "Ingeniería de Software II",
+      "creditos": 3,
+      "semestre": 6,
+      "prerrequisitos": [
+        "603501"
+      ]
+    },
+    {
+      "codigo": "603602",
+      "nombre": "Métodos Numéricos",
+      "creditos": 3,
+      "semestre": 6,
+      "prerrequisitos": [
+        "603503"
+      ]
+    },
+    {
+      "codigo": "603603",
+      "nombre": "Procesamiento de Señales e Imágenes",
+      "creditos": 3,
+      "semestre": 6,
+      "prerrequisitos": [
+        "603503"
+      ]
+    },
+    {
+      "codigo": "603604",
+      "nombre": "Optimización",
+      "creditos": 3,
+      "semestre": 6,
+      "prerrequisitos": [
+        "603504"
+      ]
+    },
+    {
+      "codigo": "603605",
+      "nombre": "Redes de Computadores",
+      "creditos": 4,
+      "semestre": 6,
+      "prerrequisitos": [
+        "603505"
+      ]
+    },
+    {
+      "codigo": "603606",
+      "nombre": "Administración Financiera para Ingeniería",
+      "creditos": 2,
+      "semestre": 6,
+      "prerrequisitos": []
+    },
+    {
+      "codigo": "603701",
+      "nombre": "Metodología de Investigación",
+      "creditos": 3,
+      "semestre": 7,
+      "prerrequisitos": [
+        "603502"
+      ]
+    },
+    {
+      "codigo": "603702",
+      "nombre": "Tecnologías Avanzadas",
+      "creditos": 3,
+      "semestre": 7,
+      "prerrequisitos": [
+        "603601"
+      ]
+    },
+    {
+      "codigo": "603703",
+      "nombre": "Ética y Humanística",
+      "creditos": 2,
+      "semestre": 7,
+      "prerrequisitos": []
+    },
+    {
+      "codigo": "603704",
+      "nombre": "Sistemas Distribuidos",
+      "creditos": 3,
+      "semestre": 7,
+      "prerrequisitos": [
+        "603605"
+      ]
+    },
+    {
+      "codigo": "603705",
+      "nombre": "Seguridad de la Información",
+      "creditos": 3,
+      "semestre": 7,
+      "prerrequisitos": [
+        "603605"
+      ]
+    },
+    {
+      "codigo": "603706",
+      "nombre": "Formulación y Gestión de Proyectos TI",
+      "creditos": 3,
+      "semestre": 7,
+      "prerrequisitos": [
+        "603606"
+      ]
+    },
+    {
+      "codigo": "603801",
+      "nombre": "Curso I Profundización",
+      "creditos": 3,
+      "semestre": 8,
+      "prerrequisitos": []
+    },
+    {
+      "codigo": "603802",
+      "nombre": "Electiva Profesional I",
+      "creditos": 3,
+      "semestre": 8,
+      "prerrequisitos": []
+    },
+    {
+      "codigo": "603803",
+      "nombre": "Simulación Computacional",
+      "creditos": 3,
+      "semestre": 8,
+      "prerrequisitos": [
+        "603502"
+      ]
+    },
+    {
+      "codigo": "603804",
+      "nombre": "Arquitectura Empresarial",
+      "creditos": 3,
+      "semestre": 8,
+      "prerrequisitos": []
+    },
+    {
+      "codigo": "603805",
+      "nombre": "Trabajo de Grado I",
+      "creditos": 2,
+      "semestre": 8,
+      "prerrequisitos": [
+        "603701"
+      ]
+    },
+    {
+      "codigo": "603806",
+      "nombre": "Cátedra Orinoquia",
+      "creditos": 2,
+      "semestre": 8,
+      "prerrequisitos": []
+    },
+    {
+      "codigo": "603901",
+      "nombre": "Curso Ii Profundización",
+      "creditos": 3,
+      "semestre": 9,
+      "prerrequisitos": [
+        "603801"
+      ]
+    },
+    {
+      "codigo": "603902",
+      "nombre": "Electiva Profesional Ii",
+      "creditos": 3,
+      "semestre": 9,
+      "prerrequisitos": []
+    },
+    {
+      "codigo": "603903",
+      "nombre": "Electiva Profesional Iii",
+      "creditos": 3,
+      "semestre": 9,
+      "prerrequisitos": []
+    },
+    {
+      "codigo": "603904",
+      "nombre": "Lenguajes de Programación",
+      "creditos": 3,
+      "semestre": 9,
+      "prerrequisitos": []
+    },
+    {
+      "codigo": "603905",
+      "nombre": "Electiva Profesional Iv",
+      "creditos": 3,
+      "semestre": 9,
+      "prerrequisitos": []
+    },
+    {
+      "codigo": "603001",
+      "nombre": "Curso Iii Profundización",
+      "creditos": 3,
+      "semestre": 10,
+      "prerrequisitos": [
+        "603901"
+      ]
+    },
+    {
+      "codigo": "603002",
+      "nombre": "Electiva Profesional V",
+      "creditos": 3,
+      "semestre": 10,
+      "prerrequisitos": []
+    },
+    {
+      "codigo": "603003",
+      "nombre": "Trabajo de Grado Ii",
+      "creditos": 4,
+      "semestre": 10,
+      "prerrequisitos": [
+        "603805"
+      ]
+    },
+    {
+      "codigo": "603004",
+      "nombre": "Electiva Complementaria",
+      "creditos": 2,
+      "semestre": 10,
+      "prerrequisitos": []
+    }
+  ]
+}
