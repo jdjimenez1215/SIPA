@@ -8,7 +8,6 @@ namespace MsInscripcion.Api.Controllers;
 
 [ApiController]
 [Route("api/materias")]
-[Produces("application/json")]
 public class MateriasController(ISender mediator) : ControllerBase
 {
     public sealed record MateriaRequest(

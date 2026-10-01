@@ -9,7 +9,6 @@ namespace MsInscripcion.Api.Controllers;
 
 [ApiController]
 [Route("api/estudiantes/{id:int}")]
-[Produces("application/json")]
 public class EstudiantesController(ISender mediator) : ControllerBase
 {
     /// <summary>Inscripciones activas del estudiante en un período (por defecto el período actual).</summary>

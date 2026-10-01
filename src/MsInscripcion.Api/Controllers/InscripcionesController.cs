@@ -7,7 +7,6 @@ namespace MsInscripcion.Api.Controllers;
 
 [ApiController]
 [Route("api/inscripciones")]
-[Produces("application/json")]
 public class InscripcionesController(ISender mediator) : ControllerBase
 {
     public sealed record EnrollRequest(int EstudianteId, string Periodo, IReadOnlyList<int> MateriaIds);

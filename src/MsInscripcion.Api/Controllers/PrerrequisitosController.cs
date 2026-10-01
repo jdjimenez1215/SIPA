@@ -7,7 +7,6 @@ namespace MsInscripcion.Api.Controllers;
 
 [ApiController]
 [Route("api/materias/{materiaId:int}/prerrequisitos")]
-[Produces("application/json")]
 public class PrerrequisitosController(ISender mediator) : ControllerBase
 {
     public sealed record PrerrequisitoRequest(int MateriaRequisitoId);

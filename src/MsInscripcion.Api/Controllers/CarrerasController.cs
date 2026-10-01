@@ -8,7 +8,6 @@ namespace MsInscripcion.Api.Controllers;
 
 [ApiController]
 [Route("api/carreras")]
-[Produces("application/json")]
 public class CarrerasController(ISender mediator) : ControllerBase
 {
     public sealed record CarreraRequest(string Codigo, string Nombre, int DuracionSemestres);

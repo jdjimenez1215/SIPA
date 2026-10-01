@@ -8,7 +8,6 @@ namespace MsInscripcion.Api.Controllers;
 
 [ApiController]
 [Route("api/materias/{materiaId:int}/horarios")]
-[Produces("application/json")]
 public class HorariosController(ISender mediator) : ControllerBase
 {
     /// <summary>HoraInicio / HoraFin en formato HH:mm.</summary>
