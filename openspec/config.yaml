@@ -1,0 +1,46 @@
+schema: spec-driven
+
+context: |
+  Tech stack: .NET 8 (C#), ASP.NET Core Web API, EF Core + PostgreSQL (Npgsql), MediatR (CQRS), FluentValidation, Serilog, Swagger
+  Architecture: Clean Architecture (Domain/Application/Infrastructure/API); one business rule = one validator (Specification/Strategy); no logic in controllers
+  Testing: xUnit + FluentAssertions + Moq via `dotnet test`; Standard Mode (no TDD; unit tests per rule still a deliverable)
+  Infra: Dockerfile + docker-compose (service + PostgreSQL)
+  Conventions: code in English, error messages in Spanish, ProblemDetails (RFC 7807) with explicit error codes
+  Env gotcha: only .NET SDK/runtime 10 installed; net8.0 projects need RollForward=Major in Directory.Build.props to run tests locally
+  Greenfield: no code yet; stack is INTENDED, from requirements
+
+strict_tdd: false
+
+testing:
+  runner: dotnet test
+  framework: xUnit
+  layers:
+    unit: xUnit + FluentAssertions + Moq (planned)
+    integration: xUnit + WebApplicationFactory (available once Microsoft.AspNetCore.Mvc.Testing added)
+    e2e: not planned
+  coverage: coverlet (dotnet test --collect:"XPlat Code Coverage") - to be added
+  quality: dotnet format (formatter), Roslyn analyzers (built-in), no separate linter/type checker
+
+rules:
+  proposal:
+    - Include rollback plan for risky changes
+    - Identify affected modules/packages
+  specs:
+    - Use Given/When/Then format for scenarios
+    - Use RFC 2119 keywords (MUST, SHALL, SHOULD, MAY)
+  design:
+    - Include sequence diagrams for complex flows
+    - Document architecture decisions with rationale
+  tasks:
+    - Group tasks by phase (infrastructure, implementation, testing)
+    - Use hierarchical numbering (1.1, 1.2, etc.)
+    - Keep tasks small enough to complete in one session
+  apply:
+    - Follow existing code patterns and conventions
+    - Never run dotnet build or dotnet test (user rule: no builds after changes)
+    - Write unit tests per business rule (success + failure) after the code (no TDD)
+  verify:
+    - Do NOT run builds/tests unless the user explicitly enables it; verify statically
+    - Compare implementation against every spec scenario
+  archive:
+    - Warn before merging destructive deltas (large removals)
