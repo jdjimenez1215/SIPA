@@ -4,9 +4,135 @@
   "programa": "Ingeniería de Sistemas",
   "semestreActual": 6,
   "historialAcademico": [
-    { "codigo": "MAT-101", "estado": "APROBADO", "nota": 4.2 },
-    { "codigo": "INF-101", "estado": "APROBADO", "nota": 4.5 },
-    { "codigo": "MAT-102", "estado": "APROBADO", "nota": 3.8 },
-    { "codigo": "INF-102", "estado": "APROBADO", "nota": 4.0 }
+    {
+      "codigo": "603101",
+      "estado": "APROBADO",
+      "nota": 4.5
+    },
+    {
+      "codigo": "603102",
+      "estado": "APROBADO",
+      "nota": 4.2
+    },
+    {
+      "codigo": "603103",
+      "estado": "APROBADO",
+      "nota": 4.2
+    },
+    {
+      "codigo": "603104",
+      "estado": "APROBADO",
+      "nota": 3.8
+    },
+    {
+      "codigo": "603105",
+      "estado": "APROBADO",
+      "nota": 4.0
+    },
+    {
+      "codigo": "603201",
+      "estado": "APROBADO",
+      "nota": 4.0
+    },
+    {
+      "codigo": "603202",
+      "estado": "APROBADO",
+      "nota": 3.9
+    },
+    {
+      "codigo": "603203",
+      "estado": "APROBADO",
+      "nota": 3.8
+    },
+    {
+      "codigo": "603204",
+      "estado": "APROBADO",
+      "nota": 3.6
+    },
+    {
+      "codigo": "603205",
+      "estado": "APROBADO",
+      "nota": 3.4
+    },
+    {
+      "codigo": "603301",
+      "estado": "APROBADO",
+      "nota": 4.1
+    },
+    {
+      "codigo": "603302",
+      "estado": "APROBADO",
+      "nota": 3.7
+    },
+    {
+      "codigo": "603303",
+      "estado": "APROBADO",
+      "nota": 3.9
+    },
+    {
+      "codigo": "603304",
+      "estado": "APROBADO",
+      "nota": 3.5
+    },
+    {
+      "codigo": "603305",
+      "estado": "APROBADO",
+      "nota": 4.0
+    },
+    {
+      "codigo": "603401",
+      "estado": "APROBADO",
+      "nota": 3.7
+    },
+    {
+      "codigo": "603402",
+      "estado": "APROBADO",
+      "nota": 4.0
+    },
+    {
+      "codigo": "603403",
+      "estado": "APROBADO",
+      "nota": 3.3
+    },
+    {
+      "codigo": "603404",
+      "estado": "APROBADO",
+      "nota": 3.8
+    },
+    {
+      "codigo": "603405",
+      "estado": "APROBADO",
+      "nota": 3.6
+    },
+    {
+      "codigo": "603501",
+      "estado": "APROBADO",
+      "nota": 3.9
+    },
+    {
+      "codigo": "603502",
+      "estado": "APROBADO",
+      "nota": 4.0
+    },
+    {
+      "codigo": "603503",
+      "estado": "APROBADO",
+      "nota": 3.4
+    },
+    {
+      "codigo": "603504",
+      "estado": "APROBADO",
+      "nota": 3.7
+    },
+    {
+      "codigo": "603505",
+      "estado": "APROBADO",
+      "nota": 3.5
+    },
+    {
+      "codigo": "603506",
+      "estado": "APROBADO",
+      "nota": 3.8
+    }
   ]
 }

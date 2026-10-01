@@ -1,7 +1,9 @@
 # Datos mock — Malla curricular e historial de estudiante
 
-Datos simulados del programa de **Ingeniería de Sistemas** para probar el
-microservicio de Evaluación Académica mientras no exista el SIAU real.
+Catálogo y trayectoria de prueba del programa de **Ingeniería de Sistemas** de la
+**Universidad de los Llanos** (Facultad de Ciencias Básicas e Ingeniería),
+usados para probar el microservicio de Evaluación Académica mientras no exista
+el SIAU real.
 
 Viven en tres archivos JSON planos, sin dependencias. Cualquier lenguaje los
 puede leer.
@@ -16,72 +18,84 @@ puede leer.
 
 ## 1. `malla_curricular.json`
 
-14 asignaturas repartidas en los semestres 1, 2, 6, 7 y 8.
+53 asignaturas, 10 semestres, **165 créditos**.
 
-Los semestres 3, 4 y 5 están **vacíos a propósito**: el caso de uso es el
-semestre 6, y un semestre sin asignaturas sirve para probar que la API responde
-correctamente cuando no hay nada que sugerir.
+Estos datos son **reales**, tomados del plan de estudios publicado por la
+Facultad (plan `PIS 603 2018 - I`, definido por el Acuerdo Académico 001 de 2017
+para los estudiantes que ingresen a partir del I periodo académico de 2018).
+Los códigos son los institucionales de 6 dígitos.
+
+Créditos por semestre:
+
+| Sem | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 |
+|---|---|---|---|---|---|---|---|---|---|---|
+| Créditos | 16 | 18 | 17 | 18 | 18 | 18 | 17 | 16 | 15 | 12 |
 
 `prerrequisitos` es una lista de **códigos**, no de objetos. Cualquier código
 debe existir en el mismo archivo; el backend lo usa para decidir si una
 asignatura queda bloqueada.
 
 ```
-INF-301 (Inteligencia Artificial)
-  └── prerrequisito: INF-201 (Bases de Datos II)
+603301 (Estructuras de Datos)
+  └── prerrequisito: 603201 (Programación Orientada a Objetos)
 ```
+
+Los prerrequisitos vienen publicados por *nombre* en la fuente; acá se
+tradujeron a código, que es lo que necesita la regla.
 
 ## 2. `estudiante_prueba.json`
 
 **Laura Gómez Ríos** (`1045123456`), semestre actual **6**.
 
-Ha aprobado los 4 primeros semestres:
+Ha aprobado **los 26 asignaturas de los semestres 1 a 5** (87 créditos), que es lo
+que corresponde a alguien que va a *entrar* al semestre 6:
 
-| Código | Nota |
+| Sem | Asignaturas aprobadas |
 |---|---|
-| `MAT-101` | 4.2 |
-| `INF-101` | 4.5 |
-| `MAT-102` | 3.8 |
-| `INF-102` | 4.0 |
+| 1 | `603101`, `603102`, `603103`, `603104`, `603105` |
+| 2 | `603201`, `603202`, `603203`, `603204`, `603205` |
+| 3 | `603301`, `603302`, `603303`, `603304`, `603305` |
+| 4 | `603401`, `603402`, `603403`, `603404`, `603405` |
+| 5 | `603501`, `603502`, `603503`, `603504`, `603505`, `603506` |
 
-El punto importante: **`INF-201` e `INF-202` no aparecen en el historial**, aunque
-están en el semestre 6. Laura va a *entrar* al semestre 6, no está saliendo de
-él. Si aparecieran como aprobadas y además se sugirieran, el mock se
-contradiría a sí mismo y ninguna regla de prerrequisitos sería coherente.
+Ninguna asignatura del semestre 6 aparece en el historial: si apareciera como
+aprobada y además se sugiriera, el mock se contradiría a sí mismo y ninguna regla
+de prerrequisitos sería coherente.
 
 ## 3. `sugerencia_mock.json`
 
 La respuesta que el frontend espera. **No es una entrada más**: funciona como
 fixture de comparación, y la API debe producir un JSON idéntico a este.
 
-9 filas y `totalCreditos: 27`.
+12 filas y `totalCreditos: 26`.
 
 ---
 
 ## Cómo se calcula la regla N+3
 
-El microservicio implementa esta lógica; los JSON solo proves los datos.
+El microservicio implementa esta lógica; los JSON solo proveen los datos.
 La clave es entender que **el semestre N y el N+1 se cursan en el mismo
 periodo**, lo que permite que una materia de N+1 tenga como prerrequisito una
 materia de N que se está tomando a la vez.
 
 ```
-Semestre 6 completo          →  INF-201  INF-202  INF-203  MAT-204  INF-204
-Semestre 7, máximo 3          →  INF-301  INF-302  INF-303
-Semestre 7, bloqueada         →  INF-304
+Semestre 6 completo          →  603601  603602  603603  603604  603605  603606
+Semestre 7, máximo 3          →  603701  603702  603703
+Semestre 7, bloqueada por cupo →  603704  603705  603706
 ```
 
-### Por qué INF-301 sí entra
+### Por qué 603702 sí entra
 
-`INF-301` requiere `INF-201`. `INF-201` no está aprobada, pero **se está
-sugiriendo en el mismo periodo**, así que el prerrequisito se considera
-cumplido. Lo mismo aplica a `INF-303`, que requiere `INF-202`.
+`603702` (Tecnologías Avanzadas) requiere `603601` (Ingeniería de Software II).
+`603601` no está aprobada, pero **se está sugiriendo en el mismo periodo**, así
+que el prerrequisito se considera cumplido.
 
-### Por qué INF-304 queda bloqueada
+### Por qué 603704 queda bloqueada
 
-`INF-304` (Taller de Grado I) requiere `INF-305` (Práctica Empresarial,
-semestre 8). Laura nunca va a alcanzar ese punto, así que la fila aparece con
-`estado: "Prerrequisito"` y `prerrequisitoCumplido: false`.
+`603704` (Sistemas Distribuidos) requiere `603605`, que sí está aprobada, así que
+`prerrequisitoCumplido` es `true`. Aun así la fila aparece como
+`estado: "Prerrequisito"`: las tres primeras del semestre 7 ya consumieron el
+cupo de la regla N+3.
 
 Aparece en la respuesta **a propósito**: el frontend la pinta con badge ámbar
 para que el usuario vea qué queda pendiente, no la omite.
@@ -91,14 +105,14 @@ para que el usuario vea qué queda pendiente, no la omite.
 `totalCreditos` **solo cuenta las filas `Sugerida`**:
 
 ```
-sem 6:  4 + 4 + 3 + 3 + 4  = 18
-sem 7:  3 + 3 + 3          =  9
-                             ───
-                             27
+sem 6:  3 + 3 + 3 + 3 + 4 + 2  = 18
+sem 7:  3 + 3 + 2              =  8
+                                   ───
+                                   26
 ```
 
-`INF-304` aporta 0. Esta es la trampa más fácil de este contrato: sumar los
-créditos de todas las filas da 31, que es incorrecto.
+Las tres filas bloqueadas aportan 0. Esta es la trampa más fácil de este
+contrato: sumar los créditos de todas las filas da 35, que es incorrecto.
 
 ---
 
@@ -149,10 +163,10 @@ Cada regla de negocio tiene un caso que la ejercita:
 
 | Caso | Código esperado |
 |---|---|
-| `GET /api/v1/matricula/sugerencia` | 200, 9 filas, 27 créditos |
+| `GET /api/v1/matricula/sugerencia` | 200, 12 filas, 26 créditos |
 | Confirmar selección válida | 201 |
 | Pedir 4 asignaturas del semestre 7 | 422 |
-| Pedir `INF-304` sin su prerrequisito | 422 |
+| Pedir `603602` sin `603503` aprobado | 422 |
 | Enviar `codigosMaterias: []` | 400 |
 | Enviar un código inexistente | 400 |
 | Confirmar dos veces en el mismo periodo | 409 |
@@ -173,6 +187,7 @@ Cada regla de negocio tiene un caso que la ejercita:
 
 ## Referencias
 
+- Fuente de la malla: <https://fcbi.unillanos.edu.co/fcbi/is>
 - `GUIA_BACKEND.md` — contrato de integración con el frontend (sección 4.2 es
   la forma exacta de la respuesta)
 - `assets/js/app.js` — el mock equivalente del lado del frontend, que se
