@@ -75,3 +75,11 @@ El adaptador va en `MatriculaApi`; `UIManager` solo agrega `renderViolations`/`s
 - [ ] Con `useMock=false`, la tabla muestra la sugerencia real de Laura vía `:5500`.
 - [ ] Confirmar inscribe (201) y un rechazo muestra cada violación en su fila.
 - [ ] Login y modo mock sin regresiones; `validar-mocks.mjs` grupo 5 en verde.
+
+## Actualización de estado (2026-10-01)
+
+Ya resuelto, **no generar tareas para esto**:
+- `feature/datos-mock` **ya está mergeada** en `feature/ms-inscripcion` (commit `0d46290`, sin conflictos).
+- El mock **ya fue corregido** a la regla acordada (commit `24645b2`): `sugerencia_mock.json` y `MOCK_SUGERENCIA` dan **23 créditos** (no 26), prerrequisitos estrictos; `validar-mocks.mjs` → 36/36.
+- El backend `regla-n3-sugerencia` **ya está implementado** (commit `57e15f2`): `GET /api/estudiantes/{id}/sugerencia` devuelve la forma del fixture + `id` + `motivo` por fila. Laura = `estudianteId` 1, periodo `2026-2`.
+- Localmente ms-inscripcion corre en `http://localhost:8081` (el 8080 puede estar ocupado) → `ENROLLMENT_ORIGIN` debe ser configurable.
