@@ -45,19 +45,19 @@
                         </h1>
 
                         <!-- ===== Formulario de login =====
-                             onsubmit cancela el envío nativo, así la página nunca se recarga.
-                             ACÁ CONECTA EL DESARROLLADOR: leer #username y #password,
-                             llamar a la API y mostrar el resultado en #response. -->
-                        <form id="login-form" name="login-form" autocomplete="on" novalidate
-                            onsubmit="event.preventDefault();">
+                             Sin eventos inline: login.js intercepta el submit
+                             (preventDefault) y llama a la API de autenticación,
+                             pintando el resultado en #response.
+                             ACÁ CONECTA EL DESARROLLADOR: GUIA_BACKEND.md §2
+                             y assets/js/login.js → LoginApi. -->
+                        <form id="login-form" name="login-form" autocomplete="on" novalidate>
 
                             <section id="login-wrapper" class="NoMarPadTopBottom">
                                 <div class="form-group">
                                     <label class="sr-only" for="username">Usuario</label>
                                     <input type="text" class="form-control" id="username" name="username"
                                         placeholder="Usuario" title="Nombre de usuario" value=""
-                                        autocomplete="username" maxlength="60" required
-                                        onkeyup="quitarEspacios(this)">
+                                        autocomplete="username" maxlength="60" required>
                                     <i class="fa fa-user" aria-hidden="true"></i>
                                 </div>
 
@@ -146,12 +146,13 @@
     <!-- ===== Scripts ===== -->
     <script src="assets/js/jquery.min.js"></script>
     <script src="assets/js/bootstrap.min.js"></script>
-    <script src="assets/js/legacy-app.js"></script>
+
+    <!-- Controlador de esta pantalla: valida el formulario y llama a la API
+         de autenticación (GUIA_BACKEND.md §2). Sin dependencias legacy. -->
     <script src="assets/js/login.js"></script>
 
-    <!-- Lógica de la aplicación (autenticación). Se carga al final con
-         defer: se ejecuta después de analizar el documento. -->
-    <script src="assets/js/app.js" defer></script>
+    <!-- app.js es el controlador de la pantalla de matrícula y solo se
+         carga en sugerencia-matricula.html -->
 </body>
 
 </html>

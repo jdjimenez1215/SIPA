@@ -1,0 +1,63 @@
+/* Estilos del dropdown de notificaciones del header. */
+
+.notification-dropdown-menu {
+    width: 320px;
+    padding: 0;
+}
+
+.notification-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+    padding: 10px 15px;
+    font-weight: bold;
+}
+
+.notification-item {
+    padding: 10px 15px;
+    border-bottom: 1px solid #f1f1f1;
+    white-space: normal;
+    background-color: #e8f4fe;
+}
+
+.notification-item:hover {
+    background-color: #f8f9fa;
+}
+
+.notification-time {
+    font-size: 0.75rem;
+    color: #6c757d;
+}
+
+.notification-unread {
+    background-color: #e8f4fe;
+}
+
+.notification-badge {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    font-size: 10px;
+}
+
+.notification-footer {
+    padding: 10px 15px;
+    text-align: center;
+    border-top: 1px solid #dee2e6;
+}
+
+.notification-icon {
+    margin-right: 15px;
+}
+
+.notification-content {
+    flex-grow: 1;
+    background-color: #e8f4fe;
+}
+
+.notification-title {
+    font-weight: bold;
+}
+
+.notification-message {
+    font-size: 0.875rem;
+}

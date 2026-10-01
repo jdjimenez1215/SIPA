@@ -1,0 +1,16 @@
+.nav-fecha-hora {
+    float: left;
+    padding: 18px 14px 0 6px;
+    font-size: 11px;
+    line-height: 1;
+    color: #6c757d;
+    letter-spacing: 0.2px;
+    user-select: none;
+}
+.nav-fecha-hora i {
+    margin-right: 4px;
+    opacity: 0.7;
+}
+@media (max-width: 480px) {
+    .nav-fecha-hora { display: none; }
+}
