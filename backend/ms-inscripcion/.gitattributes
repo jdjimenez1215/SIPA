@@ -1,0 +1,7 @@
+# Normalize line endings in the repo; let each OS check out its native endings by default.
+* text=auto
+
+# Files executed inside Linux (bash, containers) must keep LF or they break with $'\r'.
+*.sh text eol=lf
+Dockerfile text eol=lf
+.dockerignore text eol=lf

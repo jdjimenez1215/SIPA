@@ -1,0 +1,22 @@
+.atl/
+
+# Build output
+bin/
+obj/
+publish/
+
+# IDE
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+
+# Test results / coverage
+TestResults/
+coverage/
+*.trx
+
+# Env
+.env
+appsettings.*.local.json

@@ -1,0 +1,16 @@
+# Artefactos de runtime del Makefile (pidfiles y bitácoras)
+.run/
+
+# Compilación .NET
+bin/
+obj/
+
+# Node
+node_modules/
+
+# Entornos / editores
+.env
+.vs/
+.vscode/
+.idea/
+*.user
