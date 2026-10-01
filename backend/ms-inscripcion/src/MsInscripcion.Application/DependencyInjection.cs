@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using MsInscripcion.Application.Common.Behaviors;
 using MsInscripcion.Application.Common.Options;
 using MsInscripcion.Domain.Rules;
+using MsInscripcion.Domain.Services;
 
 namespace MsInscripcion.Application;
 
@@ -26,10 +27,12 @@ public static class DependencyInjection
         services.AddSingleton<IEnrollmentRule, CareerMatchRule>();
         services.AddSingleton<IEnrollmentRule, PrerequisitesRule>();
         services.AddSingleton<IEnrollmentRule, ScheduleOverlapRule>();
-        services.AddSingleton<IEnrollmentRule, SemesterLimitRule>();
+        services.AddSingleton<IEnrollmentRule, SemesterWindowRule>();
+        services.AddSingleton<IEnrollmentRule, ExtraSubjectsCapRule>();
         services.AddSingleton<IEnrollmentRule, NoDuplicateRule>();
         services.AddSingleton<IEnrollmentRule, SeatAvailabilityRule>();
         services.AddSingleton<EnrollmentRulesEngine>();
+        services.AddSingleton<EnrollmentSuggestionCalculator>();
 
         services.TryAddSingleton(TimeProvider.System);
 

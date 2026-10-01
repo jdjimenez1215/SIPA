@@ -17,5 +17,6 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\MsInscripcion.Domain\MsInscripcion.Domain.csproj" />
     <ProjectReference Include="..\..\src\MsInscripcion.Application\MsInscripcion.Application.csproj" />
+    <ProjectReference Include="..\..\src\MsInscripcion.Infrastructure\MsInscripcion.Infrastructure.csproj" />
   </ItemGroup>
 </Project>

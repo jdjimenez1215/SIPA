@@ -10,6 +10,7 @@ public static class ErrorCodes
     public const string AlreadyApproved = "MATERIA_YA_APROBADA";
     public const string AlreadyEnrolled = "MATERIA_YA_INSCRITA";
     public const string SeatsExhausted = "CUPO_AGOTADO";
+    public const string ExtraSubjectsCapExceeded = "LIMITE_SIGUIENTE_SEMESTRE_EXCEDIDO";
 
     // Domain invariants
     public const string PrerequisiteCycle = "PRERREQUISITO_CICLICO";

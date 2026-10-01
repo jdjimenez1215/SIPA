@@ -2,11 +2,14 @@ using MsInscripcion.Domain.Entities;
 
 namespace MsInscripcion.Domain.Rules;
 
-public sealed class SemesterLimitRule : IEnrollmentRule
+/// <summary>
+/// Candidate window: owed subjects (semestre &lt; N), all of N and N+1. Anything beyond N+1 is rejected.
+/// </summary>
+public sealed class SemesterWindowRule : IEnrollmentRule
 {
     public IEnumerable<RuleViolation> Evaluate(EnrollmentContext ctx, Materia candidate)
     {
-        var maxAllowed = ctx.Student.SemestreActual + ctx.MaxSemesterAhead;
+        var maxAllowed = ctx.Student.SemestreActual + 1;
         if (candidate.Semestre <= maxAllowed)
             yield break;
 

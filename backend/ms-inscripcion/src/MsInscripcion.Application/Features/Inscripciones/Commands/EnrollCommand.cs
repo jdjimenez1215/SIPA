@@ -12,7 +12,12 @@ using MsInscripcion.Domain.Rules;
 
 namespace MsInscripcion.Application.Features.Inscripciones.Commands;
 
-public sealed record EnrollCommand(int EstudianteId, string Periodo, IReadOnlyList<int> MateriaIds)
+/// <summary>Exactly one of <paramref name="MateriaIds"/> or <paramref name="CodigosMaterias"/> must be non-empty.</summary>
+public sealed record EnrollCommand(
+    int EstudianteId,
+    string Periodo,
+    IReadOnlyList<int>? MateriaIds,
+    IReadOnlyList<string>? CodigosMaterias = null)
     : IRequest<IReadOnlyList<InscripcionDto>>;
 
 public sealed class EnrollCommandValidator : AbstractValidator<EnrollCommand>
@@ -28,17 +33,40 @@ public sealed class EnrollCommandValidator : AbstractValidator<EnrollCommand>
             .Matches(EnrollmentOptions.PeriodPattern)
             .WithMessage("El periodo debe tener el formato AAAA-1 o AAAA-2 (por ejemplo 2026-2).");
 
-        RuleFor(x => x.MateriaIds)
-            .Cascade(CascadeMode.Stop)
-            .NotEmpty().WithMessage("Debe indicar al menos una materia.")
+        RuleFor(x => x)
+            .Must(x => HasIds(x) ^ HasCodes(x))
+            .WithName("materias")
+            .WithMessage("Debe indicar exactamente uno de 'materiaIds' o 'codigosMaterias' con al menos una materia.");
+
+        RuleFor(x => x.MateriaIds!)
             .Must(ids => ids.Distinct().Count() == ids.Count)
             .WithErrorCode(AppErrorCodes.DuplicateMateriaInRequest)
-            .WithMessage("La solicitud contiene materias repetidas.");
+            .WithMessage("La solicitud contiene materias repetidas.")
+            .When(OnlyIds);
 
-        RuleForEach(x => x.MateriaIds)
+        RuleForEach(x => x.MateriaIds!)
             .GreaterThan(0).WithMessage("Los identificadores de materia deben ser mayores a 0.")
-            .When(x => x.MateriaIds is not null);
+            .When(OnlyIds);
+
+        RuleFor(x => x.CodigosMaterias!)
+            .Must(codes => codes.Distinct(StringComparer.Ordinal).Count() == codes.Count)
+            .WithErrorCode(AppErrorCodes.DuplicateMateriaInRequest)
+            .WithMessage("La solicitud contiene materias repetidas.")
+            .When(OnlyCodes);
+
+        RuleForEach(x => x.CodigosMaterias!)
+            .NotEmpty().WithMessage("Los códigos de materia no pueden estar vacíos.")
+            .When(OnlyCodes);
     }
+
+    private static bool HasIds(EnrollCommand x) => x.MateriaIds is { Count: > 0 };
+
+    private static bool HasCodes(EnrollCommand x) => x.CodigosMaterias is { Count: > 0 };
+
+    // List rules only run when exactly one list was sent; otherwise the XOR rule alone reports VALIDACION_FALLIDA.
+    private static bool OnlyIds(EnrollCommand x) => HasIds(x) && !HasCodes(x);
+
+    private static bool OnlyCodes(EnrollCommand x) => HasCodes(x) && !HasIds(x);
 }
 
 public sealed class EnrollCommandHandler(
@@ -53,6 +81,9 @@ public sealed class EnrollCommandHandler(
 {
     public async Task<IReadOnlyList<InscripcionDto>> Handle(EnrollCommand request, CancellationToken ct)
     {
+        // Codes are resolved with a plain read BEFORE the transaction: it does not alter the lock order.
+        var requestedIds = await ResolveMateriaIdsAsync(request, ct);
+
         await using var transaction = await unitOfWork.BeginTransactionAsync(ct);
 
         // Lock order is always student -> materias (ascending id), held until commit/rollback.
@@ -66,7 +97,7 @@ public sealed class EnrollCommandHandler(
                 AppErrorCodes.StudentNotFound, $"No existe el estudiante con id {request.EstudianteId}.");
         }
 
-        var lockIds = request.MateriaIds.OrderBy(id => id).ToList();
+        var lockIds = requestedIds.OrderBy(id => id).ToList();
         var locked = await materias.LockByIdsAsync(lockIds, ct);
 
         var missing = lockIds.Except(locked.Select(m => m.Id)).ToList();
@@ -79,7 +110,7 @@ public sealed class EnrollCommandHandler(
         }
 
         var byId = locked.ToDictionary(m => m.Id);
-        var candidates = request.MateriaIds.Select(id => byId[id]).ToList(); // request order
+        var candidates = requestedIds.Select(id => byId[id]).ToList(); // request order
 
         var approved = await students.GetApprovedMateriaIdsAsync(student.Id, ct);
         var activeEnrollments = await inscripciones.GetActiveWithScheduleAsync(student.Id, request.Periodo, ct);
@@ -88,7 +119,7 @@ public sealed class EnrollCommandHandler(
         var context = new EnrollmentContext(
             student,
             request.Periodo,
-            options.Value.MaxSemestersAhead,
+            options.Value.MaxNextSemesterSubjects,
             approved,
             activeEnrollments.Where(i => i.Materia is not null).Select(i => i.Materia!).ToList(),
             seatCounts,
@@ -118,5 +149,21 @@ public sealed class EnrollCommandHandler(
         await transaction.CommitAsync(ct);
 
         return created.Select(i => i.ToDto(byId[i.MateriaId])).ToList();
+    }
+
+    /// <summary>Request-ordered materia ids, from ids directly or from codes (unknown codes -> 404).</summary>
+    private async Task<IReadOnlyList<int>> ResolveMateriaIdsAsync(EnrollCommand request, CancellationToken ct)
+    {
+        if (request.CodigosMaterias is not { Count: > 0 } codigos)
+            return request.MateriaIds ?? [];
+
+        var map = await materias.GetIdsByCodigosAsync(codigos, ct);
+        var unknown = codigos.Where(c => !map.ContainsKey(c)).ToList();
+        if (unknown.Count > 0)
+            throw new NotFoundException(
+                AppErrorCodes.MateriaNotFound,
+                $"No existe(n) la(s) materia(s) con código: {string.Join(", ", unknown)}.");
+
+        return codigos.Select(c => map[c]).ToList();
     }
 }

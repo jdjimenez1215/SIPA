@@ -5,20 +5,18 @@ using MsInscripcion.Application.Abstractions.Persistence;
 using MsInscripcion.Application.Common;
 using MsInscripcion.Application.Common.Exceptions;
 using MsInscripcion.Application.Common.Options;
-using MsInscripcion.Application.Features.Materias.Dtos;
-using MsInscripcion.Application.Features.Sugerencia;
+using MsInscripcion.Application.Features.Sugerencia.Dtos;
 using MsInscripcion.Domain.Enums;
 using MsInscripcion.Domain.Services;
 
-namespace MsInscripcion.Application.Features.Materias.Queries;
+namespace MsInscripcion.Application.Features.Sugerencia.Queries;
 
 /// <param name="Periodo">Optional; defaults to Enrollment:CurrentPeriod.</param>
-public sealed record MateriasDisponiblesQuery(int EstudianteId, string? Periodo = null)
-    : IRequest<IReadOnlyList<MateriaDto>>;
+public sealed record GetSugerenciaQuery(int EstudianteId, string? Periodo = null) : IRequest<SugerenciaDto>;
 
-public sealed class MateriasDisponiblesQueryValidator : AbstractValidator<MateriasDisponiblesQuery>
+public sealed class GetSugerenciaQueryValidator : AbstractValidator<GetSugerenciaQuery>
 {
-    public MateriasDisponiblesQueryValidator()
+    public GetSugerenciaQueryValidator()
     {
         RuleFor(x => x.EstudianteId).GreaterThan(0)
             .WithMessage("El identificador del estudiante debe ser mayor a 0.");
@@ -30,33 +28,49 @@ public sealed class MateriasDisponiblesQueryValidator : AbstractValidator<Materi
     }
 }
 
-/// <summary>
-/// Delegates to the suggestion calculator (same rules as the enrollment, no locks, advisory only)
-/// and returns only the <see cref="EstadoSugerencia.Sugerida"/> rows.
-/// </summary>
-public sealed class MateriasDisponiblesQueryHandler(
+public sealed class GetSugerenciaQueryHandler(
     IStudentRepository students,
+    ICarreraRepository carreras,
     IMateriaRepository materias,
     IInscripcionRepository inscripciones,
     EnrollmentSuggestionCalculator calculator,
     IOptions<EnrollmentOptions> options)
-    : IRequestHandler<MateriasDisponiblesQuery, IReadOnlyList<MateriaDto>>
+    : IRequestHandler<GetSugerenciaQuery, SugerenciaDto>
 {
-    public async Task<IReadOnlyList<MateriaDto>> Handle(MateriasDisponiblesQuery request, CancellationToken ct)
+    public async Task<SugerenciaDto> Handle(GetSugerenciaQuery request, CancellationToken ct)
     {
         var student = await students.GetByIdAsync(request.EstudianteId, ct)
             ?? throw new NotFoundException(
                 AppErrorCodes.StudentNotFound, $"No existe el estudiante con id {request.EstudianteId}.");
 
         var period = request.Periodo ?? options.Value.CurrentPeriod;
+        var carrera = await carreras.GetByIdAsync(student.CarreraId, ct);
 
         var rows = await SuggestionLoader.LoadAsync(
             student, period, options.Value.MaxNextSemesterSubjects,
             students, materias, inscripciones, calculator, ct);
 
-        return rows
-            .Where(r => r.Estado == EstadoSugerencia.Sugerida)
-            .Select(r => r.Materia.ToDto())
+        var sugeridas = rows
+            .Select(r => new MateriaSugeridaDto(
+                r.Materia.Id,
+                r.Materia.Codigo,
+                r.Materia.Nombre,
+                r.Materia.Creditos,
+                r.Materia.Semestre,
+                r.Estado,
+                r.PrerrequisitoCumplido,
+                r.Motivo))
             .ToList();
+
+        var totalCreditos = sugeridas.Where(s => s.Estado == EstadoSugerencia.Sugerida).Sum(s => s.Creditos);
+
+        return new SugerenciaDto(
+            student.Nombre,
+            carrera?.Nombre ?? string.Empty,
+            student.SemestreActual,
+            period,
+            totalCreditos,
+            sugeridas,
+            []);
     }
 }

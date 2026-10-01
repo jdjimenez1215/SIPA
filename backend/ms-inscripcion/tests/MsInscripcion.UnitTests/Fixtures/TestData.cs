@@ -62,14 +62,14 @@ public static class TestData
     public static EnrollmentContext Context(
         Materia[] candidates,
         Estudiante? student = null,
-        int maxSemesterAhead = 3,
+        int maxExtraSubjects = 3,
         IEnumerable<int>? approved = null,
         IEnumerable<Materia>? activeEnrolled = null,
         IDictionary<int, int>? seatCounts = null) =>
         new(
             student ?? Student(),
             Period,
-            maxSemesterAhead,
+            maxExtraSubjects,
             new HashSet<int>(approved ?? []),
             (activeEnrolled ?? []).ToList(),
             new Dictionary<int, int>(seatCounts ?? new Dictionary<int, int>()),

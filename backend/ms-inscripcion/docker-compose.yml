@@ -26,7 +26,7 @@ services:
       ASPNETCORE_ENVIRONMENT: Production
       Swagger__Enabled: "true"
       ConnectionStrings__Default: "Host=db;Port=5432;Database=inscripcion;Username=postgres;Password=postgres"
-      Enrollment__MaxSemestersAhead: "3"
+      Enrollment__MaxNextSemesterSubjects: "3"
       Enrollment__CurrentPeriod: "2026-2"
       Database__ApplyMigrationsOnStartup: "true"
     ports:

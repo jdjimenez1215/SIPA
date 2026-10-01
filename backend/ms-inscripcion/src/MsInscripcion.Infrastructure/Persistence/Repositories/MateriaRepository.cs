@@ -65,6 +65,18 @@ internal sealed class MateriaRepository(InscripcionDbContext context) : IMateria
             .AsSplitQuery()
             .ToListAsync(ct);
 
+    public async Task<IReadOnlyDictionary<string, int>> GetIdsByCodigosAsync(
+        IReadOnlyCollection<string> codigos, CancellationToken ct = default)
+    {
+        var wanted = codigos.ToArray();
+        var rows = await context.Materias.AsNoTracking()
+            .Where(m => wanted.Contains(m.Codigo))
+            .Select(m => new { m.Codigo, m.Id })
+            .ToListAsync(ct);
+
+        return rows.ToDictionary(r => r.Codigo, r => r.Id, StringComparer.Ordinal);
+    }
+
     public Task<bool> ExistsAsync(int id, CancellationToken ct = default) =>
         context.Materias.AnyAsync(m => m.Id == id, ct);
 

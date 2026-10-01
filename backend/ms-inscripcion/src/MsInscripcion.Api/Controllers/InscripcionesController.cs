@@ -9,7 +9,8 @@ namespace MsInscripcion.Api.Controllers;
 [Route("api/inscripciones")]
 public class InscripcionesController(ISender mediator) : ControllerBase
 {
-    public sealed record EnrollRequest(int EstudianteId, string Periodo, IReadOnlyList<int> MateriaIds);
+    public sealed record EnrollRequest(int EstudianteId, string Periodo,
+        IReadOnlyList<int>? MateriaIds, IReadOnlyList<string>? CodigosMaterias);
 
     /// <summary>Inscribe al estudiante en una o más materias (todo o nada).</summary>
     [HttpPost]
@@ -21,7 +22,7 @@ public class InscripcionesController(ISender mediator) : ControllerBase
     public async Task<IActionResult> Enroll([FromBody] EnrollRequest request, CancellationToken ct)
     {
         var result = await mediator.Send(
-            new EnrollCommand(request.EstudianteId, request.Periodo, request.MateriaIds ?? []), ct);
+            new EnrollCommand(request.EstudianteId, request.Periodo, request.MateriaIds, request.CodigosMaterias), ct);
         return Created($"/api/estudiantes/{request.EstudianteId}/inscripciones?periodo={request.Periodo}", result);
     }
 

@@ -19,6 +19,9 @@ public interface IMateriaRepository
     /// <summary>All materias of a carrera with Horarios and Prerrequisitos.</summary>
     Task<IReadOnlyList<Materia>> GetByCarreraAsync(int carreraId, CancellationToken ct = default);
 
+    /// <summary>Maps each known codigo to its materia id (unknown codes are absent). No locks.</summary>
+    Task<IReadOnlyDictionary<string, int>> GetIdsByCodigosAsync(IReadOnlyCollection<string> codigos, CancellationToken ct = default);
+
     Task<bool> ExistsAsync(int id, CancellationToken ct = default);
 
     /// <summary>True if another materia (different id) already uses the codigo.</summary>
