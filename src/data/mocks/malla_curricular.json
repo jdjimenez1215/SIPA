@@ -1,0 +1,103 @@
+{
+  "programa": "Ingeniería de Sistemas",
+  "asignaturas": [
+    {
+      "codigo": "MAT-101",
+      "nombre": "Cálculo Diferencial",
+      "creditos": 3,
+      "semestre": 1,
+      "prerrequisitos": []
+    },
+    {
+      "codigo": "INF-101",
+      "nombre": "Introducción a la Programación",
+      "creditos": 4,
+      "semestre": 1,
+      "prerrequisitos": []
+    },
+    {
+      "codigo": "MAT-102",
+      "nombre": "Cálculo Integral",
+      "creditos": 3,
+      "semestre": 2,
+      "prerrequisitos": ["MAT-101"]
+    },
+    {
+      "codigo": "INF-102",
+      "nombre": "Programación Orientada a Objetos",
+      "creditos": 4,
+      "semestre": 2,
+      "prerrequisitos": ["INF-101"]
+    },
+    {
+      "codigo": "INF-201",
+      "nombre": "Bases de Datos II",
+      "creditos": 4,
+      "semestre": 6,
+      "prerrequisitos": ["INF-102"]
+    },
+    {
+      "codigo": "INF-202",
+      "nombre": "Sistemas Operativos",
+      "creditos": 4,
+      "semestre": 6,
+      "prerrequisitos": ["INF-102"]
+    },
+    {
+      "codigo": "INF-203",
+      "nombre": "Redes de Computadores",
+      "creditos": 3,
+      "semestre": 6,
+      "prerrequisitos": ["INF-102"]
+    },
+    {
+      "codigo": "MAT-204",
+      "nombre": "Probabilidad y Estadística",
+      "creditos": 3,
+      "semestre": 6,
+      "prerrequisitos": ["MAT-102"]
+    },
+    {
+      "codigo": "INF-204",
+      "nombre": "Ingeniería de Software I",
+      "creditos": 4,
+      "semestre": 6,
+      "prerrequisitos": ["INF-102"]
+    },
+    {
+      "codigo": "INF-301",
+      "nombre": "Inteligencia Artificial",
+      "creditos": 3,
+      "semestre": 7,
+      "prerrequisitos": ["INF-201"]
+    },
+    {
+      "codigo": "INF-302",
+      "nombre": "Gerencia de Proyectos TI",
+      "creditos": 3,
+      "semestre": 7,
+      "prerrequisitos": []
+    },
+    {
+      "codigo": "INF-303",
+      "nombre": "Seguridad Informática",
+      "creditos": 3,
+      "semestre": 7,
+      "prerrequisitos": ["INF-202"]
+    },
+    {
+      "codigo": "INF-304",
+      "nombre": "Taller de Grado I",
+      "creditos": 4,
+      "semestre": 7,
+      "prerrequisitos": ["INF-305"]
+    },
+    {
+      "codigo": "INF-305",
+      "nombre": "Práctica Empresarial",
+      "creditos": 4,
+      "semestre": 8,
+      "prerrequisitos": []
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "codigoEstudiante": "1045123456",
+  "nombreEstudiante": "Laura Gómez Ríos",
+  "programa": "Ingeniería de Sistemas",
+  "semestreActual": 6,
+  "historialAcademico": [
+    { "codigo": "MAT-101", "estado": "APROBADO", "nota": 4.2 },
+    { "codigo": "INF-101", "estado": "APROBADO", "nota": 4.5 },
+    { "codigo": "MAT-102", "estado": "APROBADO", "nota": 3.8 },
+    { "codigo": "INF-102", "estado": "APROBADO", "nota": 4.0 }
+  ]
+}
