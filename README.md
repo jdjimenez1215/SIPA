@@ -1,5 +1,32 @@
 # SIPA - Proyecto Parcial
 
+Sistema de **sugerencia e inscripción de materias** para Ingeniería de Sistemas (Unillanos). Tiene un front web, una API de identidad (login JWT) y el microservicio de inscripción, que aplica la regla N+3: todo el semestre N más hasta 3 materias extra.
+
+## Documentación
+
+| Documento | Contenido |
+|---|---|
+| [Cómo correr el sistema](#cómo-correr-el-sistema-completo) (abajo) | Levantar las 3 piezas: puertos, variables y credenciales |
+| [docs/pruebas.md](docs/pruebas.md) | Cómo correr las 5 suites de prueba y la prueba manual en el navegador |
+| [docs/arquitectura-y-ajustes.md](docs/arquitectura-y-ajustes.md) | Cómo está construido (diagramas), la regla N+3 y los ajustes y bugs corregidos |
+| [backend/ms-inscripcion/README.md](backend/ms-inscripcion/README.md) | Detalle del microservicio: endpoints, configuración, seed y ejemplos curl |
+| [backend/mini-identity-api-dotnet/README.md](backend/mini-identity-api-dotnet/README.md) | API de identidad |
+
+### Arranque rápido (Git Bash)
+
+```bash
+# 1. Backend de inscripción + PostgreSQL
+cd backend/ms-inscripcion && API_PORT=8081 DB_PORT=5433 docker compose up --build -d && cd ../..
+
+# 2. Identity (otra terminal)
+dotnet run --project backend/mini-identity-api-dotnet/src/MiniIdentityApi.Api --launch-profile http
+
+# 3. Front + proxy (otra terminal)
+ENROLLMENT_ORIGIN=http://localhost:8081 python dev-server.py
+```
+
+Abrí **http://localhost:5500** y entrá con `admin` / `Admin123*`.
+
 ## Cómo correr el sistema completo
 
 El front (HTML/JS estático) se sirve con `dev-server.py`, que además actúa de **proxy mismo-origen** hacia los dos backends (sin CORS).
