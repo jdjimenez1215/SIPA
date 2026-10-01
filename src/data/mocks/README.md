@@ -175,6 +175,40 @@ Cada regla de negocio tiene un caso que la ejercita:
 
 ---
 
+## Pruebas de estos datos
+
+`src/pruebas/validar-mocks.mjs` comprueba que los tres archivos sean coherentes
+entre sí y que el contrato se cumpla. No necesita instalar nada: solo Node.
+
+```bash
+node src/pruebas/validar-mocks.mjs
+```
+
+Sale con código 1 si algo falla, así que se puede encadenar en CI.
+
+Qué verifica, en 31 comprobaciones:
+
+| Grupo | Qué comprueba |
+|---|---|
+| 1. Malla | 53 asignaturas, 165 créditos, 10 semestres, códigos únicos de 6 dígitos, todo prerrequisito existe y es de un semestre anterior |
+| 2. Estudiante | Códigos válidos, notas en rango, ninguna asignatura del semestre 6 aprobada, y que estén aprobados los prerrequisitos del semestre 6 **y los heredados de esos** |
+| 3. Contrato | `totalCreditos` suma solo las filas `Sugerida`, máximo 3 filas de N+1, nombres y créditos coinciden con la malla |
+| 4. Regla N+3 | Recalcula la sugerencia desde la malla y el historial, y exige que coincida con el fixture en asignaturas, orden, estado y créditos |
+| 5. Integración | El `MOCK_SUGERENCIA` de `assets/js/app.js` es idéntico a `sugerencia_mock.json` |
+
+El grupo 4 reimplementa la regla a propósito. Si el fixture dejara de ser lo que
+la regla produce, el contrato estaría partido y el error aparecería acá, sin
+necesidad de levantar el backend.
+
+El grupo 5 cubre el punto más frágil de la integración: **el contrato está
+duplicado**. La misma respuesta vive en `sugerencia_mock.json` y embebida en
+`assets/js/app.js` como `MOCK_SUGERENCIA`, porque el frontend la necesita para
+funcionar sin backend. Son dos copias de un mismo contrato, así que cambiarlas
+una sola rompe el contrato. Si se edita el JSON, hay que editar también el
+mock del frontend, o correr estas pruebas para que avisen.
+
+---
+
 ## Al modificar estos archivos
 
 1. **`sugerencia_mock.json` es un contrato, no un ejemplo.** Si cambias la
@@ -182,13 +216,17 @@ Cada regla de negocio tiene un caso que la ejercita:
    está mal es la respuesta.
 2. `totalCreditos` debe seguir siendo igual a la suma de las filas `Sugerida`.
 3. Ningún `prerrequisitos` puede apuntar a un código inexistente.
-4. Después de cualquier cambio, verifica que la API siga devolviendo un JSON
-   idéntico a `sugerencia_mock.json`.
+4. Si tocás `sugerencia_mock.json`, tocá también el `MOCK_SUGERENCIA` de
+   `assets/js/app.js`: es la misma respuesta en otro formato.
+5. Después de cualquier cambio, verifica que la API siga devolviendo un JSON
+   idéntico a `sugerencia_mock.json` y corré `node src/pruebas/validar-mocks.mjs`.
 
 ## Referencias
 
 - Fuente de la malla: <https://fcbi.unillanos.edu.co/fcbi/is>
+- `src/pruebas/validar-mocks.mjs` — pruebas de estos datos
 - `GUIA_BACKEND.md` — contrato de integración con el frontend (sección 4.2 es
   la forma exacta de la respuesta)
 - `assets/js/app.js` — el mock equivalente del lado del frontend, que se
-  desactiva con `API_CONFIG.useMock = false`
+  desactiva con `API_CONFIG.useMock = false`. El `MOCK_SUGERENCIA` de ahí debe
+  quedar **idéntico** a `sugerencia_mock.json`
