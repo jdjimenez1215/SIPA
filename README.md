@@ -4,6 +4,8 @@ Sistema de **sugerencia e inscripción de materias** para Ingeniería de Sistema
 
 ## Documentación
 
+### Diagramas fuente: https://drive.google.com/drive/folders/1TX8xGdMn67DkWf8xb1m4oZKuO1uS4yuQ?usp=drive_link
+
 | Documento | Contenido |
 |---|---|
 | [Cómo correr el sistema](#cómo-correr-el-sistema-completo) (abajo) | Levantar las 3 piezas: puertos, variables y credenciales |
