@@ -14,7 +14,7 @@ public class AuthenticationServiceTests
     {
         // Arrange
         var userRepository = new InMemoryUserRepository();
-        var passwordHasher = new Sha256PasswordHasher();
+        var passwordHasher = new Pbkdf2PasswordHasher();
         var tokenService = new FakeTokenService();
 
         var service = new AuthenticationService(userRepository, passwordHasher, tokenService);
@@ -41,7 +41,7 @@ public class AuthenticationServiceTests
     {
         // Arrange
         var userRepository = new InMemoryUserRepository();
-        var passwordHasher = new Sha256PasswordHasher();
+        var passwordHasher = new Pbkdf2PasswordHasher();
         var tokenService = new FakeTokenService();
 
         var service = new AuthenticationService(userRepository, passwordHasher, tokenService);
@@ -64,7 +64,7 @@ public class AuthenticationServiceTests
     {
         // Arrange
         var userRepository = new InMemoryUserRepository();
-        var passwordHasher = new Sha256PasswordHasher();
+        var passwordHasher = new Pbkdf2PasswordHasher();
         var tokenService = new FakeTokenService();
 
         var service = new AuthenticationService(userRepository, passwordHasher, tokenService);
@@ -97,7 +97,7 @@ public class AuthenticationServiceTests
     {
         // Arrange
         var userRepository = new InMemoryUserRepository();
-        var passwordHasher = new Sha256PasswordHasher();
+        var passwordHasher = new Pbkdf2PasswordHasher();
         var tokenService = new FakeTokenService();
 
         var service = new AuthenticationService(userRepository, passwordHasher, tokenService);

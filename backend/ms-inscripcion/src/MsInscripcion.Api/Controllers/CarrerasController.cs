@@ -1,4 +1,5 @@
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MsInscripcion.Application.Features.Carreras.Commands;
 using MsInscripcion.Application.Features.Carreras.Dtos;
@@ -12,17 +13,20 @@ public class CarrerasController(ISender mediator) : ControllerBase
 {
     public sealed record CarreraRequest(string Codigo, string Nombre, int DuracionSemestres);
 
+    [Authorize]
     [HttpGet]
     [ProducesResponseType(typeof(IReadOnlyList<CarreraDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAll(CancellationToken ct) =>
         Ok(await mediator.Send(new GetCarrerasQuery(), ct));
 
+    [Authorize]
     [HttpGet("{id:int}")]
     [ProducesResponseType(typeof(CarreraDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetById(int id, CancellationToken ct) =>
         Ok(await mediator.Send(new GetCarreraByIdQuery(id), ct));
 
+    [Authorize(Roles = "Admin")]
     [HttpPost]
     [ProducesResponseType(typeof(CarreraDto), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -34,6 +38,7 @@ public class CarrerasController(ISender mediator) : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
     }
 
+    [Authorize(Roles = "Admin")]
     [HttpPut("{id:int}")]
     [ProducesResponseType(typeof(CarreraDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -43,6 +48,7 @@ public class CarrerasController(ISender mediator) : ControllerBase
         Ok(await mediator.Send(
             new UpdateCarreraCommand(id, request.Codigo, request.Nombre, request.DuracionSemestres), ct));
 
+    [Authorize(Roles = "Admin")]
     [HttpDelete("{id:int}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]

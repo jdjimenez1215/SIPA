@@ -5,7 +5,35 @@
     "description": "Pruebas E2E de los 21 endpoints del microservicio de inscripción, con la semilla Unillanos (equivalente a scripts/e2e.sh).\n\n**Requisitos:** semilla limpia, porque cada paso modifica el estado: `docker compose down -v && docker compose up --build -d`.\n\n**Ejecutar en orden** con el Collection Runner o con Newman:\n`npx newman run postman/MsInscripcion.postman_collection.json -e postman/MsInscripcion.local.postman_environment.json`\n\nCambiá `host` en el environment si la API no corre en el puerto 8080 (por ejemplo `API_PORT=8081`).",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      { "key": "token", "value": "{{token}}", "type": "string" }
+    ]
+  },
   "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// ms-inscripcion requires a JWT issued by MiniIdentityApi (same Jwt:Key).",
+          "// The token is cached in the collection variable `token` for the whole run.",
+          "if (!pm.collectionVariables.get(\"token\")) {",
+          "  const authHost = pm.environment.get(\"authHost\") || pm.collectionVariables.get(\"authHost\") || \"http://localhost:5132\";",
+          "  pm.sendRequest({",
+          "    url: authHost + \"/api/auth/login\",",
+          "    method: \"POST\",",
+          "    header: { \"Content-Type\": \"application/json\" },",
+          "    body: { mode: \"raw\", raw: JSON.stringify({ usernameOrEmail: \"admin\", password: \"Admin123*\" }) }",
+          "  }, (err, res) => {",
+          "    if (!err && res.code === 200) pm.collectionVariables.set(\"token\", res.json().accessToken);",
+          "    else console.error(\"[SIPA] No se pudo obtener token de \" + authHost, err);",
+          "  });",
+          "}"
+        ]
+      }
+    },
     {
       "listen": "test",
       "script": {
@@ -32,6 +60,10 @@
     {
       "key": "baseUrl",
       "value": "{{host}}/api"
+    },
+    {
+      "key": "authHost",
+      "value": "http://localhost:5132"
     },
     {
       "key": "carreraId",
@@ -1924,7 +1956,7 @@
                   "const base = pm.variables.replaceIn(\"{{baseUrl}}\");",
                   "const post = (estudianteId, materiaIds) => ({",
                   "  url: base + \"/inscripciones\", method: \"POST\",",
-                  "  header: { \"Content-Type\": \"application/json\" },",
+                  "  header: { \"Content-Type\": \"application/json\", \"Authorization\": \"Bearer \" + pm.collectionVariables.get(\"token\") },",
                   "  body: { mode: \"raw\", raw: JSON.stringify({ estudianteId, periodo: \"2026-2\", materiaIds }) }",
                   "});",
                   "const results = [];",
@@ -1981,7 +2013,7 @@
                   "const base = pm.variables.replaceIn(\"{{baseUrl}}\");",
                   "const post = (estudianteId, materiaIds) => ({",
                   "  url: base + \"/inscripciones\", method: \"POST\",",
-                  "  header: { \"Content-Type\": \"application/json\" },",
+                  "  header: { \"Content-Type\": \"application/json\", \"Authorization\": \"Bearer \" + pm.collectionVariables.get(\"token\") },",
                   "  body: { mode: \"raw\", raw: JSON.stringify({ estudianteId, periodo: \"2026-2\", materiaIds }) }",
                   "});",
                   "const results = [];",

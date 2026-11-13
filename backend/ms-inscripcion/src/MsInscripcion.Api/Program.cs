@@ -1,6 +1,9 @@
 using System.Diagnostics;
+using System.Text;
 using System.Text.Json.Serialization;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Any;
 using Microsoft.OpenApi.Models;
@@ -52,6 +55,8 @@ builder.Services.AddProblemDetails(options => options.CustomizeProblemDetails = 
 {
     ctx.ProblemDetails.Extensions.TryAdd("code", ctx.ProblemDetails.Status switch
     {
+        StatusCodes.Status401Unauthorized => "NO_AUTENTICADO",
+        StatusCodes.Status403Forbidden => "PROHIBIDO",
         StatusCodes.Status404NotFound => "RECURSO_NO_ENCONTRADO",
         StatusCodes.Status405MethodNotAllowed => "METODO_NO_PERMITIDO",
         StatusCodes.Status415UnsupportedMediaType => "TIPO_CONTENIDO_NO_SOPORTADO",
@@ -76,7 +81,63 @@ builder.Services.AddSwaggerGen(options =>
         Example = new OpenApiString("08:00"),
         Description = "Hora en formato HH:mm"
     });
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        In = ParameterLocation.Header,
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT",
+        Description = "accessToken devuelto por POST /api/auth/login de MiniIdentityApi."
+    });
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            Array.Empty<string>()
+        }
+    });
 });
+
+// ---- JWT validation: tokens are issued by MiniIdentityApi (shared issuer/audience/key) ----
+var jwtKey = builder.Configuration["Jwt:Key"] ?? Environment.GetEnvironmentVariable("JWT_KEY");
+
+if (string.IsNullOrWhiteSpace(jwtKey) || Encoding.UTF8.GetByteCount(jwtKey) < 32)
+    throw new InvalidOperationException(
+        "Jwt:Key is missing or shorter than 32 bytes. Set the JWT_KEY environment variable (Jwt__Key).");
+
+if (!builder.Environment.IsDevelopment() && jwtKey.StartsWith("dev-only-", StringComparison.Ordinal))
+    throw new InvalidOperationException(
+        "Jwt:Key is the development key. Set a real secret through the JWT_KEY environment variable.");
+
+var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? "MiniIdentityApi";
+var jwtAudience = builder.Configuration["Jwt:Audience"] ?? "MiniIdentityApiUsers";
+
+builder.Services
+    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = jwtIssuer,
+            ValidAudience = jwtAudience,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
+            ClockSkew = TimeSpan.FromMinutes(1)
+        };
+    });
+
+builder.Services.AddAuthorization();
 
 builder.Services.AddApplication(builder.Configuration);
 builder.Services.AddInfrastructure(builder.Configuration);
@@ -86,6 +147,8 @@ var app = builder.Build();
 app.UseSerilogRequestLogging();
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 app.UseStatusCodePages();
+app.UseAuthentication();
+app.UseAuthorization();
 
 if (app.Configuration.GetValue("Swagger:Enabled", app.Environment.IsDevelopment()))
 {

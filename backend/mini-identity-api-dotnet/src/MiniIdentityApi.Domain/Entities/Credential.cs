@@ -2,8 +2,13 @@
 
 public class Credential
 {
+    // Never serialize credentials: these properties are not part of any API contract.
+    [System.Text.Json.Serialization.JsonIgnore]
     public string PasswordHash { get; private set; }
+
+    [System.Text.Json.Serialization.JsonIgnore]
     public string Salt { get; private set; }
+
     public DateTime LastChangedAt { get; private set; }
 
     public Credential(string passwordHash, string salt)

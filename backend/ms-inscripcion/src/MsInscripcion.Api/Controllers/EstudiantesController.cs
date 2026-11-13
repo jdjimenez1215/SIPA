@@ -1,4 +1,5 @@
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MsInscripcion.Application.Features.Inscripciones.Dtos;
 using MsInscripcion.Application.Features.Inscripciones.Queries;
@@ -9,6 +10,7 @@ using MsInscripcion.Application.Features.Sugerencia.Queries;
 
 namespace MsInscripcion.Api.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("api/estudiantes/{id:int}")]
 public class EstudiantesController(ISender mediator) : ControllerBase
