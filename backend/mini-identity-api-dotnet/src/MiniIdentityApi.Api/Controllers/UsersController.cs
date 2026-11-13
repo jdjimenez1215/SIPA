@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MiniIdentityApi.Application.DTOs.Users;
 using MiniIdentityApi.Application.Services;
@@ -27,6 +28,10 @@ public class UsersController : ControllerBase
     [HttpGet("{id:guid}")]
     public IActionResult GetById(Guid id)
     {
+        // Admin can read anyone; a regular user only their own profile (prevents IDOR).
+        if (!User.IsInRole("Admin") && !IsCurrentUser(id))
+            return Forbid();
+
         var user = _userService.GetById(id);
         return user is null ? NotFound() : Ok(user);
     }
@@ -53,5 +58,11 @@ public class UsersController : ControllerBase
     {
         _userService.AssignRole(id, request.RoleName);
         return Ok(new { message = "Role assigned." });
+    }
+
+    private bool IsCurrentUser(Guid id)
+    {
+        var raw = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub");
+        return Guid.TryParse(raw, out var currentId) && currentId == id;
     }
 }

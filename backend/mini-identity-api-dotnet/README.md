@@ -166,8 +166,9 @@ Stores users in memory using a `List<User>`.
 ### InMemoryRoleRepository
 Stores roles in memory using a `List<Role>`.
 
-### Sha256PasswordHasher
-Generates salts, hashes passwords with SHA-256, and verifies passwords.
+### Pbkdf2PasswordHasher
+Generates salts, derives passwords with PBKDF2-HMAC-SHA256 (210,000 iterations) and verifies them in constant time.
+The hash embeds the algorithm and iteration count (`pbkdf2-sha256$<iterations>$<hash>`), so the cost can be raised later.
 
 ### JwtTokenService
 Builds JWT access tokens using configuration values from `appsettings.json`.
@@ -187,12 +188,11 @@ dotnet add package Swashbuckle.AspNetCore --version 10.*
 
 ## Configuration
 
-Add this to `MiniIdentityApi.Api/appsettings.json`:
+`MiniIdentityApi.Api/appsettings.json` only contains the issuer and audience. **The signing key must never be committed:**
 
 ```json
 {
   "Jwt": {
-    "Key": "THIS_IS_A_DEMO_KEY_CHANGE_IT_123456789",
     "Issuer": "MiniIdentityApi",
     "Audience": "MiniIdentityApiUsers"
   },
@@ -205,6 +205,23 @@ Add this to `MiniIdentityApi.Api/appsettings.json`:
   "AllowedHosts": "*"
 }
 ```
+
+Provide the key at runtime (the API refuses to start without it, and rejects keys under 32 bytes):
+
+```bash
+# Bash / Git Bash
+export JWT_KEY="$(openssl rand -base64 48)"
+# PowerShell (48 bytes aleatorios criptográficos)
+$b = New-Object byte[] 48
+[System.Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($b)
+$env:JWT_KEY = [Convert]::ToBase64String($b)
+
+# O para desarrollo local (queda fuera del repo, en user-secrets)
+dotnet user-secrets set "Jwt:Key" "$(openssl rand -base64 48)"
+```
+
+`appsettings.Development.json` ships a throwaway `dev-only-...` key that the API rejects when
+`ASPNETCORE_ENVIRONMENT` is anything other than `Development`.
 
 ---
 

@@ -1,4 +1,5 @@
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MsInscripcion.Application.Features.Horarios.Commands;
 using MsInscripcion.Application.Features.Horarios.Dtos;
@@ -13,12 +14,14 @@ public class HorariosController(ISender mediator) : ControllerBase
     /// <summary>HoraInicio / HoraFin en formato HH:mm.</summary>
     public sealed record HorarioRequest(DiaSemana DiaSemana, TimeOnly HoraInicio, TimeOnly HoraFin);
 
+    [Authorize]
     [HttpGet]
     [ProducesResponseType(typeof(IReadOnlyList<HorarioDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetAll(int materiaId, CancellationToken ct) =>
         Ok(await mediator.Send(new GetHorariosByMateriaQuery(materiaId), ct));
 
+    [Authorize(Roles = "Admin")]
     [HttpPost]
     [ProducesResponseType(typeof(HorarioDto), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -31,6 +34,7 @@ public class HorariosController(ISender mediator) : ControllerBase
         return Created($"/api/materias/{materiaId}/horarios", created);
     }
 
+    [Authorize(Roles = "Admin")]
     [HttpPut("{horarioId:int}")]
     [ProducesResponseType(typeof(HorarioDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -41,6 +45,7 @@ public class HorariosController(ISender mediator) : ControllerBase
         Ok(await mediator.Send(
             new UpdateHorarioCommand(materiaId, horarioId, request.DiaSemana, request.HoraInicio, request.HoraFin), ct));
 
+    [Authorize(Roles = "Admin")]
     [HttpDelete("{horarioId:int}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]

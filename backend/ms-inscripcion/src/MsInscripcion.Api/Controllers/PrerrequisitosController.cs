@@ -1,4 +1,5 @@
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MsInscripcion.Application.Features.Prerrequisitos.Commands;
 using MsInscripcion.Application.Features.Prerrequisitos.Dtos;
@@ -11,12 +12,14 @@ public class PrerrequisitosController(ISender mediator) : ControllerBase
 {
     public sealed record PrerrequisitoRequest(int MateriaRequisitoId);
 
+    [Authorize]
     [HttpGet]
     [ProducesResponseType(typeof(IReadOnlyList<PrerrequisitoDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetAll(int materiaId, CancellationToken ct) =>
         Ok(await mediator.Send(new GetPrerrequisitosByMateriaQuery(materiaId), ct));
 
+    [Authorize(Roles = "Admin")]
     [HttpPost]
     [ProducesResponseType(typeof(PrerrequisitoDto), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -29,6 +32,7 @@ public class PrerrequisitosController(ISender mediator) : ControllerBase
         return Created($"/api/materias/{materiaId}/prerrequisitos", created);
     }
 
+    [Authorize(Roles = "Admin")]
     [HttpDelete("{materiaRequisitoId:int}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]

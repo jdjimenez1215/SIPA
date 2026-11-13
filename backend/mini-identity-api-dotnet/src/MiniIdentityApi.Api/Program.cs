@@ -39,7 +39,7 @@ builder.Services.AddSwaggerGen(options =>
 
 builder.Services.AddSingleton<IUserRepository, InMemoryUserRepository>();
 builder.Services.AddSingleton<IRoleRepository, InMemoryRoleRepository>();
-builder.Services.AddSingleton<IPasswordHasher, Sha256PasswordHasher>();
+builder.Services.AddSingleton<IPasswordHasher, Pbkdf2PasswordHasher>();
 builder.Services.AddSingleton<ITokenService, JwtTokenService>();
 
 builder.Services.AddScoped<AuthenticationService>();
@@ -47,8 +47,24 @@ builder.Services.AddScoped<AuthorizationService>();
 builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<RoleService>();
 
-var jwtKey = builder.Configuration["Jwt:Key"]
-    ?? throw new InvalidOperationException("Jwt:Key is missing in configuration.");
+// The signing key must never live in source control: use the JWT_KEY environment variable
+// (or Jwt__Key in configuration) or `dotnet user-secrets`. appsettings.Development.json only
+// carries a throwaway key that is rejected outside Development.
+// JWT_KEY wins over configuration so both processes can share one key in any environment.
+var jwtKey = Environment.GetEnvironmentVariable("JWT_KEY")
+    ?? builder.Configuration["Jwt:Key"];
+
+if (string.IsNullOrWhiteSpace(jwtKey))
+    throw new InvalidOperationException(
+        "Jwt:Key is missing. Set the JWT_KEY environment variable (Jwt__Key) or use `dotnet user-secrets`.");
+
+if (Encoding.UTF8.GetByteCount(jwtKey) < 32)
+    throw new InvalidOperationException(
+        "Jwt:Key must be at least 32 bytes (256 bits) long. Generate one with: openssl rand -base64 48");
+
+if (!builder.Environment.IsDevelopment() && jwtKey.StartsWith("dev-only-", StringComparison.Ordinal))
+    throw new InvalidOperationException(
+        "Jwt:Key is the development key. Set a real secret through the JWT_KEY environment variable.");
 
 var jwtIssuer = builder.Configuration["Jwt:Issuer"]
     ?? throw new InvalidOperationException("Jwt:Issuer is missing in configuration.");
@@ -69,7 +85,8 @@ builder.Services
             ValidIssuer = jwtIssuer,
             ValidAudience = jwtAudience,
             IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(jwtKey))
+                Encoding.UTF8.GetBytes(jwtKey)),
+            ClockSkew = TimeSpan.FromMinutes(1)
         };
     });
 

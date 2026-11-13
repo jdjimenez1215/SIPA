@@ -1,10 +1,12 @@
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MsInscripcion.Application.Features.Inscripciones.Commands;
 using MsInscripcion.Application.Features.Inscripciones.Dtos;
 
 namespace MsInscripcion.Api.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("api/inscripciones")]
 public class InscripcionesController(ISender mediator) : ControllerBase

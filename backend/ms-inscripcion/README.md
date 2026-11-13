@@ -196,31 +196,35 @@ Todas las respuestas de error incluyen `type, title, status, detail, instance` m
 
 ### Con Docker (recomendado)
 
-Requiere Docker con Compose.
+Requiere Docker con Compose y una clave de firma JWT compartida con **MiniIdentityApi**:
 
 ```bash
+export JWT_KEY="$(openssl rand -base64 48)"   # mínimo 32 bytes; en PowerShell: $env:JWT_KEY="..."
 docker compose up --build
 ```
 
 - La API queda en **http://localhost:8080** y Swagger UI en **http://localhost:8080/swagger** (el compose corre en `Production` con `Swagger__Enabled=true`).
 - PostgreSQL 16 en `localhost:5432` (usuario/clave `postgres`/`postgres`, base `inscripcion`), con volumen nombrado `pgdata`.
+- `db` y `api` se publican solo en `127.0.0.1` (no accesibles desde la red local).
 - La API espera a que la base esté sana (`pg_isready`), aplica las migraciones y carga la semilla al arrancar.
+- Sin `JWT_KEY` el contenedor no arranca (`Define JWT_KEY ...`): la clave no vive en el repositorio.
 - Para empezar de cero: `docker compose down -v`.
 - Si los puertos están ocupados, cambialos con `API_PORT` y `DB_PORT` (la API usa `API_PORT` en el host y Postgres `DB_PORT`): `API_PORT=8081 DB_PORT=5433 docker compose up --build`. Con puertos distintos, `PORT=8081 bash scripts/e2e.sh` y `--env-var host=http://localhost:8081` en Newman.
 
 ### Pruebas E2E de todos los endpoints
 
-`scripts/e2e.sh` ejecuta 145 chequeos sobre los 21 endpoints: la sugerencia de los cinco estudiantes de la semilla, la regla N + máx. 3 (tope, adeudada, activas que cuentan), prerrequisitos estrictos, `codigosMaterias`, camino feliz, validaciones, atomicidad, dos carreras concurrentes (mismo estudiante con materias que se cruzan y último cupo) y los errores del framework en formato ProblemDetails. Necesita la semilla limpia porque cada paso modifica el estado:
+`scripts/e2e.sh` ejecuta 147 chequeos sobre los 21 endpoints: autenticación/autorización (401 sin token, 403 sin rol `Admin`), la sugerencia de los cinco estudiantes de la semilla, la regla N + máx. 3 (tope, adeudada, activas que cuentan), prerrequisitos estrictos, `codigosMaterias`, camino feliz, validaciones, atomicidad, dos carreras concurrentes (mismo estudiante con materias que se cruzan y último cupo) y los errores del framework en formato ProblemDetails. Necesita **MiniIdentityApi corriendo** (`AUTH_ORIGIN`, por defecto `http://localhost:5132`) **con la misma `JWT_KEY` que el contenedor** y la semilla limpia, porque cada paso modifica el estado:
 
 ```bash
 docker compose down -v && docker compose up --build -d
-PORT=8080 bash scripts/e2e.sh   # termina con "TOTAL: 145 passed, 0 failed"
+PORT=8080 bash scripts/e2e.sh   # termina con "TOTAL: 147 passed, 0 failed"
 ```
 
 ### Colección de Postman
 
 `postman/` tiene las mismas pruebas como colección de Postman: 98 requests en 11 carpetas (299 asserts con Newman), con asserts en cada request y un chequeo global de que todo error sea `application/problem+json` con `code` y `traceId`.
 
+- **Token automático:** un *pre-request* de la colección hace `POST {authHost}/api/auth/login` (`admin` / `Admin123*`) y guarda el `accessToken` en la variable `token`; la colección autentica con `Bearer {{token}}`. `authHost` (por defecto `http://localhost:5132`) se puede sobrescribir en el environment. **Requiere MiniIdentityApi corriendo** y compartiendo la misma `JWT_KEY`.
 - **Postman:** importá `postman/MsInscripcion.postman_collection.json` y `postman/MsInscripcion.local.postman_environment.json`, elegí el environment *MsInscripcion - local* (ajustá `host` si usás otro puerto) y ejecutá la colección **en orden** con el Collection Runner, sobre la semilla limpia.
 - **Newman (CLI/CI):**
 
@@ -234,10 +238,11 @@ Las pruebas de concurrencia disparan dos `pm.sendRequest` en paralelo desde el s
 
 ### Local con `dotnet run`
 
-Necesitás una PostgreSQL accesible con la cadena de `appsettings.json` (por defecto `localhost:5432`, base `inscripcion`, `postgres`/`postgres`). Por ejemplo, solo la base con Docker:
+Necesitás una PostgreSQL accesible con la cadena de `appsettings.json` (por defecto `localhost:5432`, base `inscripcion`, `postgres`/`postgres`) y la clave JWT. Por ejemplo, solo la base con Docker:
 
 ```bash
 docker compose up -d db
+export JWT_KEY="$(openssl rand -base64 48)"   # o usá la clave dev de appsettings.Development.json
 dotnet run --project src/MsInscripcion.Api
 ```
 
@@ -278,6 +283,9 @@ Todo es sobreescribible con variables de entorno (`__` como separador de seccion
 | `Enrollment:CurrentPeriod` | `Enrollment__CurrentPeriod` | `2026-2` | Periodo por defecto en las consultas. Formato `^\d{4}-[12]$`; se valida al arrancar. |
 | `Database:ApplyMigrationsOnStartup` | `Database__ApplyMigrationsOnStartup` | `true` | Aplica migraciones (y semilla) al iniciar. |
 | `Serilog:*` | `Serilog__MinimumLevel__Default` | `Information` | Logging por consola. |
+| `Jwt:Key` | `JWT_KEY` (o `Jwt__Key`) | — (obligatoria) | Clave HMAC-SHA256 compartida con MiniIdentityApi. Mínimo 32 bytes; el arranque falla si falta. En `Production` se rechaza la clave `dev-only-*` de desarrollo. |
+| `Jwt:Issuer` | `Jwt__Issuer` | `MiniIdentityApi` | Issuer esperado en el token. |
+| `Jwt:Audience` | `Jwt__Audience` | `MiniIdentityApiUsers` | Audience esperado en el token. |
 | `Swagger:Enabled` | `Swagger__Enabled` | `true` solo en `Development` (compose: `true`) | Habilita Swagger UI en `/swagger`, independiente del entorno. |
 | - | `ASPNETCORE_ENVIRONMENT` | (compose: `Production`) | Entorno de ASP.NET Core. |
 | - | `ASPNETCORE_URLS` | `http://+:8080` en la imagen | Puerto de escucha dentro del contenedor. |
@@ -326,16 +334,42 @@ Casos de `POST /api/inscripciones` que cubre la semilla:
 
 ## Ejemplos con curl
 
+Todos los endpoints salvo `/api/auth/*` exigen un JWT emitido por **MiniIdentityApi**. El helper `api`
+es simplemente `curl` con la cabecera `Authorization` ya puesta:
+
+```bash
+# Token de administrador (MiniIdentityApi en http://localhost:5132)
+TOKEN=$(curl -s -X POST http://localhost:5132/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"usernameOrEmail":"admin","password":"Admin123*"}' \
+  | grep -o '"accessToken":"[^"]*"' | cut -d'"' -f4)
+
+api() { curl -s -H "Authorization: Bearer $TOKEN" "$@"; }
+```
+
+Sin token la API responde `401` (`code: NO_AUTENTICADO`) y, con un usuario sin rol `Admin`, las
+escrituras responden `403` (`code: PROHIBIDO`).
+
+| Endpoints | Acceso |
+|---|---|
+| `/api/*` (catálogo, sugerencia, inscripciones, estudiantes) | JWT válido (`[Authorize]`) |
+| `POST`/`PUT`/`DELETE` de `carreras`, `materias`, `horarios`, `prerrequisitos` | rol `Admin` |
+| `/swagger`, `/swagger/v1/swagger.json` | público (esquema `Bearer` para probar) |
+| `/api/auth/*` (identity, otro servicio) | público |
+
+La validación comprueba firma, `iss`, `aud`, expiración y `ClockSkew` de 1 minuto; los claims
+`role`/`roles` de MiniIdentityApi alimentan `[Authorize(Roles = "Admin")]`.
+
 Los ejemplos usan `http://localhost:8080` y los ids/códigos reales de la semilla Unillanos. Ejecutalos **en este orden** sobre una base recién sembrada (`docker compose down -v && docker compose up -d` para reiniciar): el camino feliz inscribe a Laura en sus 8 materias sugeridas y desde ahí la sugerencia ya no es la misma.
 
 ### 1. Ver el catálogo y la semilla
 
 ```bash
 # Carreras
-curl -s http://localhost:8080/api/carreras
+api http://localhost:8080/api/carreras
 
 # Catálogo de materias con horarios y prerrequisitos (filtros opcionales)
-curl -s "http://localhost:8080/api/materias?carreraId=1&semestre=6"
+api "http://localhost:8080/api/materias?carreraId=1&semestre=6"
 ```
 
 Ejemplo de un elemento del catálogo (horas en `HH:mm`, días como texto):
@@ -355,8 +389,8 @@ Ejemplo de un elemento del catálogo (horas en `HH:mm`, días como texto):
 ### 2. Sugerencia de carga para Laura
 
 ```bash
-curl -s http://localhost:8080/api/estudiantes/1/sugerencia
-curl -s "http://localhost:8080/api/estudiantes/1/sugerencia?periodo=2026-2"
+api http://localhost:8080/api/estudiantes/1/sugerencia
+api "http://localhost:8080/api/estudiantes/1/sugerencia?periodo=2026-2"
 ```
 
 Respuesta (12 filas en total; se muestran tres: dos `Sugerida` y la que bloquea el prerrequisito):
@@ -383,15 +417,15 @@ Respuesta (12 filas en total; se muestran tres: dos `Sugerida` y la que bloquea 
 Las 6 materias del semestre 6 más 603701 y 603703 suman **23 créditos** (3+3+3+3+4+2+3+2). 603702, 603704, 603705 y 603706 quedan como `Prerrequisito`. Otros estudiantes para ver el tope y los casos A3:
 
 ```bash
-curl -s http://localhost:8080/api/estudiantes/2/sugerencia   # Mateo: tope de 3 extras (603804/603806 LIMITE)
-curl -s http://localhost:8080/api/estudiantes/3/sugerencia   # Camila: la adeudada 603305 comparte el tope
-curl -s http://localhost:8080/api/estudiantes/4/sugerencia   # Sofia: 603902 CRUCE_HORARIO, 603903 CUPO_AGOTADO, 603904/603905 Sugerida
+api http://localhost:8080/api/estudiantes/2/sugerencia   # Mateo: tope de 3 extras (603804/603806 LIMITE)
+api http://localhost:8080/api/estudiantes/3/sugerencia   # Camila: la adeudada 603305 comparte el tope
+api http://localhost:8080/api/estudiantes/4/sugerencia   # Sofia: 603902 CRUCE_HORARIO, 603903 CUPO_AGOTADO, 603904/603905 Sugerida
 ```
 
 ### 3. Materias disponibles (deprecado)
 
 ```bash
-curl -s http://localhost:8080/api/estudiantes/1/materias-disponibles
+api http://localhost:8080/api/estudiantes/1/materias-disponibles
 ```
 
 Devuelve solo las filas `Sugerida` de la sugerencia como lista de materias: para Laura, los 8 códigos 603601-603606, 603701 y 603703.
@@ -401,7 +435,7 @@ Devuelve solo las filas `Sugerida` de la sugerencia como lista de materias: para
 Laura pide 603601 y 603702 en la misma solicitud. 603702 requiere 603601, que **aún no aprobó**: pedirlas juntas no lo satisface.
 
 ```bash
-curl -s -i -X POST http://localhost:8080/api/inscripciones \
+api -i -X POST http://localhost:8080/api/inscripciones \
   -H "Content-Type: application/json" \
   -d '{"estudianteId":1,"periodo":"2026-2","codigosMaterias":["603601","603702"]}'
 ```
@@ -430,7 +464,7 @@ Con `materiaIds` es lo mismo (`"materiaIds":[27,34]`). Las solicitudes aceptan *
 Laura pide una aprobada, una con prerrequisito pendiente, una de semestre 8 y una de otra carrera:
 
 ```bash
-curl -s -X POST http://localhost:8080/api/inscripciones \
+api -X POST http://localhost:8080/api/inscripciones \
   -H "Content-Type: application/json" \
   -d '{"estudianteId":1,"periodo":"2026-2","codigosMaterias":["603101","603702","603801","ADM101"]}'
 ```
@@ -442,7 +476,7 @@ Devuelve **4 violaciones**: `MATERIA_YA_APROBADA` (603101), `PREREQUISITO_NO_CUM
 Mateo (semestre 7) pide cuatro materias del semestre 8; la 4.ª excede el tope:
 
 ```bash
-curl -s -X POST http://localhost:8080/api/inscripciones \
+api -X POST http://localhost:8080/api/inscripciones \
   -H "Content-Type: application/json" \
   -d '{"estudianteId":2,"periodo":"2026-2","codigosMaterias":["603801","603802","603803","603804"]}'
 ```
@@ -464,11 +498,11 @@ curl -s -X POST http://localhost:8080/api/inscripciones \
 
 ```bash
 # Sofia: 603801 y 603902 comparten Lun+Mie 14-16 -> 422 CRUCE_HORARIO sobre 603902 (details.conflictsWith = "603801")
-curl -s -X POST http://localhost:8080/api/inscripciones -H "Content-Type: application/json" \
+api -X POST http://localhost:8080/api/inscripciones -H "Content-Type: application/json" \
   -d '{"estudianteId":4,"periodo":"2026-2","codigosMaterias":["603801","603902"]}'
 
 # 603903 tiene cupo 1 y Andres ya lo ocupa -> 422 CUPO_AGOTADO (details: cuposMaximos 1, inscritos 1)
-curl -s -X POST http://localhost:8080/api/inscripciones -H "Content-Type: application/json" \
+api -X POST http://localhost:8080/api/inscripciones -H "Content-Type: application/json" \
   -d '{"estudianteId":4,"periodo":"2026-2","codigosMaterias":["603903"]}'
 ```
 
@@ -477,7 +511,7 @@ curl -s -X POST http://localhost:8080/api/inscripciones -H "Content-Type: applic
 Laura inscribe sus 8 materias `Sugerida` (6 del semestre 6 + 2 extras del semestre 7, dentro del tope):
 
 ```bash
-curl -s -i -X POST http://localhost:8080/api/inscripciones \
+api -i -X POST http://localhost:8080/api/inscripciones \
   -H "Content-Type: application/json" \
   -d '{"estudianteId":1,"periodo":"2026-2","codigosMaterias":["603601","603602","603603","603604","603605","603606","603701","603703"]}'
 ```
@@ -500,10 +534,10 @@ La adeudada **no** es obligatoria: Camila puede inscribir `[603801, 603802, 6038
 
 ```bash
 # Periodo por defecto (Enrollment:CurrentPeriod)
-curl -s http://localhost:8080/api/estudiantes/1/inscripciones
+api http://localhost:8080/api/estudiantes/1/inscripciones
 
 # Periodo explícito
-curl -s "http://localhost:8080/api/estudiantes/1/inscripciones?periodo=2026-2"
+api "http://localhost:8080/api/estudiantes/1/inscripciones?periodo=2026-2"
 ```
 
 Devuelve solo las inscripciones **Activas** del periodo, con horarios. Después del camino feliz, Laura tiene las 8 materias; y su sugerencia ya **omite** las inscritas.
@@ -511,11 +545,11 @@ Devuelve solo las inscripciones **Activas** del periodo, con horarios. Después 
 ### 10. Cancelar y reinscribir
 
 ```bash
-curl -s -i -X DELETE http://localhost:8080/api/inscripciones/1000   # 204 No Content
-curl -s -i -X DELETE http://localhost:8080/api/inscripciones/1000   # 409 INSCRIPCION_YA_CANCELADA
+api -i -X DELETE http://localhost:8080/api/inscripciones/1000   # 204 No Content
+api -i -X DELETE http://localhost:8080/api/inscripciones/1000   # 409 INSCRIPCION_YA_CANCELADA
 
 # Tras cancelar, Laura puede volver a inscribir 603601 (201)
-curl -s -i -X POST http://localhost:8080/api/inscripciones \
+api -i -X POST http://localhost:8080/api/inscripciones \
   -H "Content-Type: application/json" \
   -d '{"estudianteId":1,"periodo":"2026-2","codigosMaterias":["603601"]}'
 ```
@@ -526,27 +560,27 @@ La cancelación es lógica (`estado = Cancelada`); los cupos y el tope se cuenta
 
 ```bash
 # Crear una carrera
-curl -s -X POST http://localhost:8080/api/carreras \
+api -X POST http://localhost:8080/api/carreras \
   -H "Content-Type: application/json" \
   -d '{"codigo":"DER","nombre":"Derecho","duracionSemestres":10}'
 
 # Crear una materia (semestre 1 de la carrera 1)
-curl -s -X POST http://localhost:8080/api/materias \
+api -X POST http://localhost:8080/api/materias \
   -H "Content-Type: application/json" \
   -d '{"codigo":"LOG101","nombre":"Lógica","creditos":3,"carreraId":1,"semestre":1,"cuposMaximos":25}'
 
 # Agregar un horario a una materia (horas HH:mm; días: Lunes, Martes, Miercoles, Jueves, Viernes, Sabado, Domingo)
-curl -s -X POST http://localhost:8080/api/materias/27/horarios \
+api -X POST http://localhost:8080/api/materias/27/horarios \
   -H "Content-Type: application/json" \
   -d '{"diaSemana":"Viernes","horaInicio":"08:00","horaFin":"10:00"}'
 
 # Agregar un prerrequisito (603601 requiere además 603101)
-curl -s -X POST http://localhost:8080/api/materias/27/prerrequisitos \
+api -X POST http://localhost:8080/api/materias/27/prerrequisitos \
   -H "Content-Type: application/json" \
   -d '{"materiaRequisitoId":1}'
 
 # Un ciclo se rechaza con 422 PRERREQUISITO_CICLICO (603702 requiere 603601; 603601 no puede requerir 603702)
-curl -s -X POST http://localhost:8080/api/materias/27/prerrequisitos \
+api -X POST http://localhost:8080/api/materias/27/prerrequisitos \
   -H "Content-Type: application/json" \
   -d '{"materiaRequisitoId":34}'
 ```

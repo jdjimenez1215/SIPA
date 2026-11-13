@@ -7,11 +7,21 @@ PORT="${PORT:-8080}"; B="http://localhost:$PORT/api"; J='Content-Type: applicati
 TMP="$(mktemp -d)"; trap 'rm -rf "$TMP"' EXIT
 PASS=0; FAIL=0; FAILS=()
 
+# Auth: ms-inscripcion validates JWTs issued by MiniIdentityApi (shared Jwt:Key).
+AUTH="${AUTH_ORIGIN:-http://localhost:5132}"
+TOKEN=$(curl -s -X POST "$AUTH/api/auth/login" -H "$J" \
+  -d '{"usernameOrEmail":"admin","password":"Admin123*"}' | grep -oP '"accessToken":"\K[^"]+')
+if [ -z "$TOKEN" ]; then
+  echo "No se pudo obtener token de $AUTH — ¿está MiniIdentityApi corriendo?" >&2
+  exit 1
+fi
+AUTHH="Authorization: Bearer $TOKEN"
+
 # t NAME EXPECTED_STATUS METHOD PATH [BODY] [MUST_CONTAIN] [MUST_NOT_CONTAIN]
 t() {
   local name="$1" exp="$2" m="$3" p="$4" body="$5" has="$6" hasnot="$7" st
-  if [ -n "$body" ]; then st=$(curl -s -o "$TMP/last" -w '%{http_code}' -X "$m" "$B$p" -H "$J" -d "$body")
-  else st=$(curl -s -o "$TMP/last" -w '%{http_code}' -X "$m" "$B$p"); fi
+  if [ -n "$body" ]; then st=$(curl -s -o "$TMP/last" -w '%{http_code}' -X "$m" "$B$p" -H "$J" -H "$AUTHH" -d "$body")
+  else st=$(curl -s -o "$TMP/last" -w '%{http_code}' -X "$m" "$B$p" -H "$AUTHH"); fi
   LAST="$(cat "$TMP/last")"; local ok=1
   [ "$st" = "$exp" ] || ok=0
   [ -z "$has" ] || printf '%s' "$LAST" | grep -q -F -- "$has" || ok=0
@@ -36,7 +46,7 @@ only_sugeridas() { # only_sugeridas CODE... : the Sugerida rows are exactly thes
   want=$(printf '%s\n' "$@" | sort | tr '\n' ' '); [ "$got" = "$want" ]
 }
 
-enroll_bg() { curl -s -o "$TMP/$3" -w '%{http_code}' -X POST "$B/inscripciones" -H "$J" -d "{\"estudianteId\":$1,\"periodo\":\"2026-2\",\"materiaIds\":[$2]}" > "$TMP/$3.st"; }
+enroll_bg() { curl -s -o "$TMP/$3" -w '%{http_code}' -X POST "$B/inscripciones" -H "$J" -H "$AUTHH" -d "{\"estudianteId\":$1,\"periodo\":\"2026-2\",\"materiaIds\":[$2]}" > "$TMP/$3.st"; }
 race() { # race NAME A_STUDENT A_IDS B_STUDENT B_IDS LOSER_CODE
   enroll_bg "$2" "$3" ra & enroll_bg "$4" "$5" rb & wait
   local sa sb; sa=$(cat "$TMP/ra.st"); sb=$(cat "$TMP/rb.st")
@@ -46,6 +56,17 @@ race() { # race NAME A_STUDENT A_IDS B_STUDENT B_IDS LOSER_CODE
   else FAIL=$((FAIL+1)); FAILS+=("$1"); printf '  FAIL  %s+%s  concurrent  %s (expected 201+422 %s)\n' "$sa" "$sb" "$1" "$6"; fi
   if [ "$sa" = 201 ]; then RACE_WINNER=$(grep -oP '"id":\K\d+' "$TMP/ra" | head -1); else RACE_WINNER=$(grep -oP '"id":\K\d+' "$TMP/rb" | head -1); fi
 }
+
+echo "== Autenticacion y autorizacion"
+st_no_token=$(curl -s -o /dev/null -w '%{http_code}' "$B/carreras")
+ck "sin token -> 401" test "$st_no_token" = 401
+curl -s -o /dev/null -X POST "$AUTH/api/auth/register" -H "$J" \
+  -d '{"username":"e2e_user","email":"e2e_user@example.com","password":"E2ePass123!"}'
+USER_TOKEN=$(curl -s -X POST "$AUTH/api/auth/login" -H "$J" \
+  -d '{"usernameOrEmail":"e2e_user","password":"E2ePass123!"}' | grep -oP '"accessToken":"\K[^"]+')
+st_no_admin=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$B/carreras" \
+  -H "$J" -H "Authorization: Bearer $USER_TOKEN" -d '{"codigo":"NOP","nombre":"Nope","duracionSemestres":1}')
+ck "usuario sin rol Admin -> 403" test "$st_no_admin" = 403
 
 echo "== Carreras"
 t "listar carreras"                 200 GET    /carreras "" '"codigo":"ING-SIS"'
@@ -217,7 +238,7 @@ t "carrera borrada ya no existe"    404 GET    "/carreras/$CID" "" CARRERA_NO_EN
 echo "== Errores del framework (ProblemDetails)"
 t "ruta inexistente"                404 GET    /no-existe "" RECURSO_NO_ENCONTRADO
 t "metodo no permitido"             405 PATCH  /carreras "" METODO_NO_PERMITIDO
-st=$(curl -s -o "$TMP/last" -w '%{http_code}' -X POST "$B/carreras" -H 'Content-Type: text/plain' -d 'x')
+st=$(curl -s -o "$TMP/last" -w '%{http_code}' -X POST "$B/carreras" -H "$AUTHH" -H 'Content-Type: text/plain' -d 'x')
 grep -q TIPO_CONTENIDO_NO_SOPORTADO "$TMP/last" && [ "$st" = 415 ] && { PASS=$((PASS+1)); echo "  PASS  415  POST /carreras (text/plain)"; } || { FAIL=$((FAIL+1)); FAILS+=("415"); echo "  FAIL  $st POST text/plain: $(cat "$TMP/last" | head -c 300)"; }
 st=$(curl -s -o /dev/null -w '%{http_code}' "http://localhost:$PORT/swagger/v1/swagger.json")
 [ "$st" = 200 ] && { PASS=$((PASS+1)); echo "  PASS  200  swagger.json"; } || { FAIL=$((FAIL+1)); FAILS+=("swagger"); echo "  FAIL  $st swagger.json"; }

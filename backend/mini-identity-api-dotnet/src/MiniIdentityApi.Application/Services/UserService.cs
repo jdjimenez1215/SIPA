@@ -1,4 +1,5 @@
-﻿using MiniIdentityApi.Application.Interfaces;
+﻿using MiniIdentityApi.Application.DTOs.Users;
+using MiniIdentityApi.Application.Interfaces;
 using MiniIdentityApi.Domain.Entities;
 
 namespace MiniIdentityApi.Application.Services;
@@ -14,9 +15,14 @@ public class UserService
         _roleRepository = roleRepository;
     }
 
-    public List<User> GetAll() => _userRepository.GetAll();
+    // API responses use UserDto so credentials (hash/salt) never leave the domain.
+    public List<UserDto> GetAll() => _userRepository.GetAll().Select(UserDto.FromEntity).ToList();
 
-    public User? GetById(Guid id) => _userRepository.FindById(id);
+    public UserDto? GetById(Guid id)
+    {
+        var user = _userRepository.FindById(id);
+        return user is null ? null : UserDto.FromEntity(user);
+    }
 
     public void Activate(Guid id)
     {

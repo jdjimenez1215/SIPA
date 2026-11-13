@@ -4,6 +4,8 @@
 export LC_ALL=C.UTF-8
 BASE="${BASE:-http://localhost:5500}"
 BASE="${BASE%/}"
+# MiniIdentityApi directo (el proxy también sirve /api/auth/*, pero aquí necesitamos el token antes).
+AUTH="${AUTH_ORIGIN:-http://localhost:5132}"
 PASS=0; FAIL=0
 
 # check <nombre> <status esperado> <patrón grep esperado|""> <args curl...>
@@ -23,16 +25,27 @@ check() {
 }
 
 echo "Smoke vía $BASE"
+
+# ms-inscripcion exige un JWT emitido por MiniIdentityApi (misma Jwt:Key).
+TOKEN=$(curl -s -m 15 -X POST "$AUTH/api/auth/login" -H 'Content-Type: application/json' \
+  -d '{"usernameOrEmail":"admin","password":"Admin123*"}' | grep -o '"accessToken":"[^"]*"' | cut -d'"' -f4)
+if [ -z "$TOKEN" ]; then
+  echo "FAIL  no se pudo obtener token de $AUTH (¿está MiniIdentityApi corriendo?)"
+  FAIL=$((FAIL+1))
+fi
+AUTHH=(-H "Authorization: Bearer $TOKEN")
+
 check "static index.html"                  200 "<html|<!DOCTYPE" "$BASE/index.html"
 check "POST /api/auth/login (identity)"    200 '"accessToken"' -X POST "$BASE/api/auth/login" \
   -H 'Content-Type: application/json' -d '{"usernameOrEmail":"admin","password":"Admin123*"}'
+check "GET sin token -> 401"               401 "" "$BASE/api/estudiantes/1/sugerencia?periodo=2026-2"
 check "GET sugerencia Laura (ms)"          200 '"totalCreditos"[[:space:]]*:.*"id"|"id".*"totalCreditos"' \
-  "$BASE/api/estudiantes/1/sugerencia?periodo=2026-2"
+  "${AUTHH[@]}" "$BASE/api/estudiantes/1/sugerencia?periodo=2026-2"
 check "POST inscripciones -> 422 (sin escritura)" 422 'INSCRIPCION_RECHAZADA' -X POST "$BASE/api/inscripciones" \
-  -H 'Content-Type: application/json' \
+  "${AUTHH[@]}" -H 'Content-Type: application/json' \
   -d '{"estudianteId":1,"periodo":"2026-2","codigosMaterias":["603601","603702"]}'
 check "GET estudiante inexistente -> 404 problem+json" 404 '"code"' \
-  -H 'Accept: application/json' "$BASE/api/estudiantes/999/sugerencia?periodo=2026-2"
+  "${AUTHH[@]}" -H 'Accept: application/json' "$BASE/api/estudiantes/999/sugerencia?periodo=2026-2"
 
 echo "PASS: $PASS  FAIL: $FAIL  TOTAL: $((PASS+FAIL))"
 [ "$FAIL" -eq 0 ]

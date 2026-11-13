@@ -470,6 +470,11 @@ const App = {
   enviando: false,
 
   async init() {
+    // La API exige JWT: sin token (p. ej. entrada directa a esta página) volvemos al login.
+    if (!API_CONFIG.useMock && !sessionStorage.getItem('sipa.auth.token')) {
+      window.location.replace('index.html');
+      return;
+    }
     UIManager.cachearElementos();
     UIManager.iniciarReloj();
     this._suscribirEventos();
@@ -487,6 +492,10 @@ const App = {
 
     const resultado = await MatriculaApi.obtenerSugerencia();
     if (!resultado.ok) {
+      if (resultado.status === 401) {          // token vencido o inválido
+        window.location.replace('index.html');
+        return;
+      }
       this.materiasActuales = [];
       UIManager.vaciarTabla();
       UIManager.mostrarAlerta('danger', describirProblema(resultado));
@@ -538,6 +547,10 @@ const App = {
         materiaIds
       });
 
+      if (resultado.status === 401) {            // token vencido o inválido
+        window.location.replace('index.html');
+        return;
+      }
       if (resultado.status === 201) {
         const n = Array.isArray(resultado.body) ? resultado.body.length : materiaIds.length;
         UIManager.mostrarAlerta('success', `${n} ${n === 1 ? 'asignatura inscrita' : 'asignaturas inscritas'} (${API_CONFIG.periodo})`);

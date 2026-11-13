@@ -6,7 +6,8 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
     ports:
-      - "${DB_PORT:-5432}:5432"
+      # Bind to loopback only: the database must not be reachable from the LAN.
+      - "127.0.0.1:${DB_PORT:-5432}:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -29,8 +30,13 @@ services:
       Enrollment__MaxNextSemesterSubjects: "3"
       Enrollment__CurrentPeriod: "2026-2"
       Database__ApplyMigrationsOnStartup: "true"
+      # Shared with MiniIdentityApi: same issuer, audience and signing key.
+      Jwt__Issuer: "MiniIdentityApi"
+      Jwt__Audience: "MiniIdentityApiUsers"
+      Jwt__Key: "${JWT_KEY:?Define JWT_KEY (openssl rand -base64 48) before starting}"
     ports:
-      - "${API_PORT:-8080}:8080"
+      # Loopback only: the API is consumed by the dev-server proxy on the same host.
+      - "127.0.0.1:${API_PORT:-8080}:8080"
 
 volumes:
   pgdata:
