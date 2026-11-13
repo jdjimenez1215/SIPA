@@ -28,8 +28,14 @@ public class JwtTokenService : ITokenService
 
         claims.AddRange(user.Roles.Select(role => new Claim(ClaimTypes.Role, role.Name)));
 
+        // JWT_KEY must win over Jwt:Key here too: the token is validated with the same
+        // resolved key, so signing with the configured fallback would break validation.
+        var signingKey = Environment.GetEnvironmentVariable("JWT_KEY")
+            ?? _configuration["Jwt:Key"]
+            ?? throw new InvalidOperationException("Jwt:Key is missing.");
+
         var key = new SymmetricSecurityKey(
-            Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]!));
+            Encoding.UTF8.GetBytes(signingKey));
 
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 

@@ -107,7 +107,9 @@ builder.Services.AddSwaggerGen(options =>
 });
 
 // ---- JWT validation: tokens are issued by MiniIdentityApi (shared issuer/audience/key) ----
-var jwtKey = builder.Configuration["Jwt:Key"] ?? Environment.GetEnvironmentVariable("JWT_KEY");
+// JWT_KEY (env) wins over configuration so both services can share one key in any environment.
+var jwtKey = Environment.GetEnvironmentVariable("JWT_KEY")
+    ?? builder.Configuration["Jwt:Key"];
 
 if (string.IsNullOrWhiteSpace(jwtKey) || Encoding.UTF8.GetByteCount(jwtKey) < 32)
     throw new InvalidOperationException(

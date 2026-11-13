@@ -50,7 +50,9 @@ builder.Services.AddScoped<RoleService>();
 // The signing key must never live in source control: use the JWT_KEY environment variable
 // (or Jwt__Key in configuration) or `dotnet user-secrets`. appsettings.Development.json only
 // carries a throwaway key that is rejected outside Development.
-var jwtKey = builder.Configuration["Jwt:Key"] ?? Environment.GetEnvironmentVariable("JWT_KEY");
+// JWT_KEY wins over configuration so both processes can share one key in any environment.
+var jwtKey = Environment.GetEnvironmentVariable("JWT_KEY")
+    ?? builder.Configuration["Jwt:Key"];
 
 if (string.IsNullOrWhiteSpace(jwtKey))
     throw new InvalidOperationException(
