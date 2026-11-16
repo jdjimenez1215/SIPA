@@ -4,13 +4,14 @@ services:
     environment:
       POSTGRES_DB: inscripcion
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      DB_APP_PASSWORD: ${DB_APP_PASSWORD:-sipa_app}
     ports:
       # Bind to loopback only: the database must not be reachable from the LAN.
       - "127.0.0.1:${DB_PORT:-5432}:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
-      - ../../deploy/db-init.sql:/docker-entrypoint-initdb.d/01-app-user.sql:ro
+      - ../../deploy/db-init.sh:/docker-entrypoint-initdb.d/01-app-user.sh:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d inscripcion"]
       interval: 5s
@@ -27,7 +28,7 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       Swagger__Enabled: "true"
-      ConnectionStrings__Default: "Host=db;Port=5432;Database=inscripcion;Username=sipa_app;Password=sipa_app"
+      ConnectionStrings__Default: "Host=db;Port=5432;Database=inscripcion;Username=sipa_app;Password=${DB_APP_PASSWORD:-sipa_app}"
       Enrollment__MaxNextSemesterSubjects: "3"
       Enrollment__CurrentPeriod: "2026-2"
       Database__ApplyMigrationsOnStartup: "true"

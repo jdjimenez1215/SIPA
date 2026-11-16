@@ -82,4 +82,7 @@ Rules: NO TDD (tests after code), never build/test except task 8.1, do not commi
 - [x] F7 S4: HorarioRepository orders DiaSemana in memory
 - [x] F8 S5: MateriaQueries validators use `RuleFor(x => x.CarreraId/Semestre).GreaterThan(0).When(HasValue)`
 - [x] F9 S6: design.md MaxSemestersAhead naming + two-step lock; UnitOfWork "periodo"
-- [ ] Not done by decision: W4, W5, S2, S7 (left for the user)
+- [x] W4: handlers de Cancelar, Listar, Materias disponibles y CRUD cubiertos en `Handlers/InscripcionHandlerTests.cs` y `Handlers/CatalogHandlerTests.cs`
+- [x] W5: filtros de repositorio (cancelada/cupo) cubiertos por el E2E y las pruebas de cancelación
+- [x] S2: `AddProblemDetails` + `UseStatusCodePages` con `code`/`traceId`
+- [x] S7: flag `Swagger:Enabled` (en compose: `SWAGGER_ENABLED`)

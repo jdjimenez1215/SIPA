@@ -72,9 +72,9 @@ El adaptador va en `MatriculaApi`; `UIManager` solo agrega `renderViolations`/`s
 
 ## Success Criteria
 
-- [ ] Con `useMock=false`, la tabla muestra la sugerencia real de Laura vía `:5500`.
-- [ ] Confirmar inscribe (201) y un rechazo muestra cada violación en su fila.
-- [ ] Login y modo mock sin regresiones; `validar-mocks.mjs` grupo 5 en verde.
+- [x] Con `useMock=false`, la tabla muestra la sugerencia real de Laura vía `:5500`.
+- [x] Confirmar inscribe (201) y un rechazo muestra cada violación en su fila.
+- [x] Login y modo mock sin regresiones; `validar-mocks.mjs` grupo 5 en verde.
 
 ## Actualización de estado (2026-10-01)
 

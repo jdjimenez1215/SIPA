@@ -1,5 +1,7 @@
 # SIPA - Proyecto Parcial
 
+[![CI](https://github.com/jdjimenez1215/SIPA/actions/workflows/ci.yml/badge.svg)](https://github.com/jdjimenez1215/SIPA/actions/workflows/ci.yml)
+
 Sistema de **sugerencia e inscripción de materias** para Ingeniería de Sistemas (Unillanos). Tiene un front web, una API de identidad (login JWT) y el microservicio de inscripción, que aplica la regla N+3 (semestre N más hasta 3 materias extra), **prioriza las materias más antiguas**, evita cruces de horario, muestra los **cupos disponibles** y respeta un **tope de 18 créditos** (20 si el promedio es 4.0 o más). Cada materia se puede marcar o desmarcar antes de confirmar.
 
 ## Documentación
@@ -9,7 +11,9 @@ Sistema de **sugerencia e inscripción de materias** para Ingeniería de Sistema
 | Documento | Contenido |
 |---|---|
 | [Cómo correr el sistema](#cómo-correr-el-sistema-completo) (abajo) | Levantar las 3 piezas: puertos, variables y credenciales |
-| [docs/pruebas.md](docs/pruebas.md) | Cómo correr las 5 suites de prueba y la prueba manual en el navegador |
+| [docs/pruebas.md](docs/pruebas.md) | Cómo correr las suites de prueba y la prueba manual en el navegador |
+| [docs/despliegue-azure.md](docs/despliegue-azure.md) | Pipeline, Container Apps, secretos y variables de producción |
+| [GUIA_BACKEND.md](GUIA_BACKEND.md) | Contrato front ↔ API |
 | [docs/arquitectura-y-ajustes.md](docs/arquitectura-y-ajustes.md) | Cómo está construido (diagramas), la regla N+3 y los ajustes y bugs corregidos |
 | [backend/ms-inscripcion/README.md](backend/ms-inscripcion/README.md) | Detalle del microservicio: endpoints, configuración, seed y ejemplos curl |
 | [backend/mini-identity-api-dotnet/README.md](backend/mini-identity-api-dotnet/README.md) | API de identidad |
@@ -89,7 +93,7 @@ El front (HTML/JS estático) se sirve con `dev-server.py`, que además actúa de
 - Docker + Docker Compose (solo para PostgreSQL + ms-inscripcion)
 - .NET SDK 10 (mini-identity-api)
 - Python 3 (dev-server del front)
-- Node.js (solo para `validar-mocks.mjs`)
+- Node.js 22 (tests del front y `validar-mocks.mjs`)
 
 ### 1) ms-inscripcion (docker compose)
 
@@ -151,7 +155,9 @@ Si el destino está caído, el proxy responde `502 application/problem+json` (`P
 - **Persistencia**: usuarios y roles se guardan en PostgreSQL (base `identidad`) cuando hay `ConnectionStrings__Default`; sin connection string (tests o demo local) usa memoria.
 - **BD**: la API usa el rol `sipa_app`, no el superusuario `postgres`.
 - **Recuperación de contraseña y consulta de usuario**: deshabilitadas a propósito; los enlaces muestran “no disponible” y no llaman a la red.
-- **Producción/Azure**: definir `SWAGGER_ENABLED=false`, `JWT_KEY` y la cadena de conexión como secretos. `ASPNETCORE_FORWARDEDHEADERS_ENABLED=true` ya está configurado para el ingress.
+- **Producción/Azure**: `SWAGGER_ENABLED=false` por defecto; `JWT_KEY`, `POSTGRES_PASSWORD` y `DB_APP_PASSWORD` se leen de variables de entorno (ver `.env.example`). `ASPNETCORE_FORWARDEDHEADERS_ENABLED=true` ya está configurado para el ingress. Ver [docs/despliegue-azure.md](docs/despliegue-azure.md).
+- **Identity con migraciones EF**: al cambiar el modelo ya no se usa `EnsureCreated`; el arranque ejecuta `MigrateAsync`. En local, tras cambios de esquema hacé `docker compose down -v`.
+- **Front**: `dev-server.py` es para desarrollo. Para producción usá un reverse proxy que replique `/api/*` (ver la misma guía).
 
 ### Configuración del front (`API_CONFIG` en `assets/js/app.js`)
 
@@ -172,9 +178,14 @@ En **Materias inscritas** cada fila tiene un botón **Cancelar** (el estudiante 
 ### Verificación
 
 ```bash
-# Tests unitarios (125 ms + 27 identity), sin Docker
+# Tests unitarios (147 ms + 30 identity), sin Docker
 dotnet test backend/ms-inscripcion/tests/MsInscripcion.UnitTests
 dotnet test backend/mini-identity-api-dotnet/src/MiniIdentityApi.Tests
+
+# Tests del front (jsdom) y del mock
+npm ci
+npm test
+npm run test:mock
 
 # E2E del backend (159 checks; requiere el stack arriba y BD limpia)
 PORT=8080 bash backend/ms-inscripcion/scripts/e2e.sh

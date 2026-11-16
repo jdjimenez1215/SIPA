@@ -16,6 +16,12 @@ public class User
     // Null for staff accounts (Admin); set for accounts that act on behalf of a student.
     public int? EstudianteId { get; private set; }
 
+    public const int MaxFailedLoginAttempts = 5;
+    public static readonly TimeSpan LockoutDuration = TimeSpan.FromMinutes(15);
+
+    public int FailedLoginAttempts { get; private set; }
+    public DateTimeOffset? LockoutEnd { get; private set; }
+
     public User(string username, string email, Credential credential, int? estudianteId = null)
     {
         Username = username;
@@ -48,5 +54,31 @@ public class User
     {
         return Roles.Any(role => role.Permissions.Any(p =>
             p.Code.Equals(code, StringComparison.OrdinalIgnoreCase)));
+    }
+
+    public bool IsLockedOut(DateTimeOffset now) => LockoutEnd is { } end && end > now;
+
+    /// <summary>Counts a failed password attempt and locks the account after the configured threshold.</summary>
+    public void RegisterFailedLogin(DateTimeOffset now)
+    {
+        if (LockoutEnd is { } end && end <= now)
+        {
+            FailedLoginAttempts = 0;
+            LockoutEnd = null;
+        }
+
+        FailedLoginAttempts++;
+
+        if (FailedLoginAttempts >= MaxFailedLoginAttempts)
+        {
+            LockoutEnd = now.Add(LockoutDuration);
+            FailedLoginAttempts = 0;
+        }
+    }
+
+    public void ResetFailedLogins()
+    {
+        FailedLoginAttempts = 0;
+        LockoutEnd = null;
     }
 }

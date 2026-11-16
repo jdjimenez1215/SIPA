@@ -162,7 +162,8 @@ Represents the current status of a user:
 
 ### EfUserRepository / EfRoleRepository
 Persist users, roles and permissions in PostgreSQL (`IdentityDbContext`) when `ConnectionStrings:Default` is configured.
-The API creates the schema with `EnsureCreated` and seeds `admin` and the demo student `laura`.
+The API applies EF migrations (`Database:ApplyMigrationsOnStartup=true`) and then seeds `admin` and the demo student `laura`.
+The login locks an account for 15 minutes after 5 failed attempts, in addition to the per-IP rate limit.
 
 ### InMemoryUserRepository / InMemoryRoleRepository
 Fallback used when no connection string is configured (unit tests and quick local runs). Data is lost on restart.

@@ -12,15 +12,18 @@ public class AuthenticationService
     private readonly IUserRepository _userRepository;
     private readonly IPasswordHasher _passwordHasher;
     private readonly ITokenService _tokenService;
+    private readonly TimeProvider _clock;
 
     public AuthenticationService(
         IUserRepository userRepository,
         IPasswordHasher passwordHasher,
-        ITokenService tokenService)
+        ITokenService tokenService,
+        TimeProvider? clock = null)
     {
         _userRepository = userRepository;
         _passwordHasher = passwordHasher;
         _tokenService = tokenService;
+        _clock = clock ?? TimeProvider.System;
     }
 
     public void Register(RegisterRequest request)
@@ -80,13 +83,24 @@ public class AuthenticationService
         if (user.Status != UserStatus.Active)
             throw new UnauthorizedAccessException("User is not active.");
 
+        var now = _clock.GetUtcNow();
+        if (user.IsLockedOut(now))
+            throw new UnauthorizedAccessException("Account locked due to too many failed attempts. Try again later.");
+
         var isValid = _passwordHasher.Verify(
             request.Password,
             user.Credential.Salt,
             user.Credential.PasswordHash);
 
         if (!isValid)
+        {
+            user.RegisterFailedLogin(now);
+            _userRepository.Save(user);
             throw new UnauthorizedAccessException("Invalid credentials.");
+        }
+
+        user.ResetFailedLogins();
+        _userRepository.Save(user);
 
         return new AuthResponse
         {

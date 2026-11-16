@@ -199,8 +199,7 @@ const LoginApp = {
       setTimeout(() => { window.location.href = LOGIN_CONFIG.rutaTrasLogin; }, 300);
     } catch (error) {
       console.error('[SIPA] Error de autenticación:', error);
-      const credencialesInvalidas = error.status === 401 ||
-        (error.status === 500 && /invalid credentials|credenciales inválidas/i.test(error.body || ''));
+      const credencialesInvalidas = error.status === 401;
       if (credencialesInvalidas) {
         LoginUI.mostrarMensaje('error', 'Usuario o contraseña incorrectos.');
       } else if (error.status === 429) {

@@ -1,0 +1,75 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_NOLOGO: "true"
+  DOTNET_CLI_TELEMETRY_OPTOUT: "true"
+  JWT_KEY: "ci-only-k3y_0123456789abcdef0123456789abcdef0123456789"
+
+jobs:
+  backend-tests:
+    name: Backend unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.0.x
+            10.0.x
+      - run: dotnet test backend/ms-inscripcion/tests/MsInscripcion.UnitTests/MsInscripcion.UnitTests.csproj -c Release --nologo
+      - run: dotnet test backend/mini-identity-api-dotnet/src/MiniIdentityApi.Tests/MiniIdentityApi.Tests.csproj -c Release --nologo
+
+  front-tests:
+    name: Front + mock tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run test:mock
+
+  e2e:
+    name: E2E + smoke (Docker)
+    runs-on: ubuntu-latest
+    needs: [backend-tests, front-tests]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Levantar el stack
+        run: docker compose up -d --build
+      - name: Esperar health checks
+        run: |
+          for i in $(seq 1 90); do
+            api=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/ready || true)
+            identity=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:5132/health || true)
+            front=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:5500/index.html || true)
+            if [ "$api" = 200 ] && [ "$identity" = 200 ] && [ "$front" = 200 ]; then
+              echo "Stack listo"
+              exit 0
+            fi
+            sleep 2
+          done
+          docker compose ps
+          exit 1
+      - name: Smoke del proxy
+        run: bash scripts/smoke-proxy.sh
+      - name: E2E del backend
+        run: PORT=8080 bash backend/ms-inscripcion/scripts/e2e.sh
+      - name: Logs si algo falló
+        if: failure()
+        run: docker compose logs --no-color --tail=200
+      - name: Apagar y borrar la base
+        if: always()
+        run: docker compose down -v

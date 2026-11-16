@@ -2635,14 +2635,14 @@
           }
         },
         {
-          "name": "Swagger disponible",
+          "name": "Swagger disponible o deshabilitado",
           "event": [
             {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+                  "pm.test(\"HTTP 200 (habilitado) o 404 (deshabilitado)\", () => pm.expect([200, 404]).to.include(pm.response.code));"
                 ]
               }
             }

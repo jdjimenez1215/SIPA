@@ -222,7 +222,7 @@ PORT=8080 bash scripts/e2e.sh   # termina con "TOTAL: 159 passed, 0 failed"
 
 ### Colección de Postman
 
-`postman/` tiene las mismas pruebas como colección de Postman: 103 requests en 11 carpetas (300 asserts con Newman), con asserts en cada request y un chequeo global de que todo error sea `application/problem+json` con `code` y `traceId`.
+`postman/` tiene las mismas pruebas como colección de Postman: 103 requests en 11 carpetas (301 asserts con Newman), con asserts en cada request y un chequeo global de que todo error sea `application/problem+json` con `code` y `traceId`.
 
 - **Token automático:** un *pre-request* de la colección hace `POST {authHost}/api/auth/login` (`admin` / `Admin123*`) y guarda el `accessToken` en la variable `token`; la colección autentica con `Bearer {{token}}`. `authHost` (por defecto `http://localhost:5132`) se puede sobrescribir en el environment. **Requiere MiniIdentityApi corriendo** y compartiendo la misma `JWT_KEY`.
 - **Postman:** importá `postman/MsInscripcion.postman_collection.json` y `postman/MsInscripcion.local.postman_environment.json`, elegí el environment *MsInscripcion - local* (ajustá `host` si usás otro puerto) y ejecutá la colección **en orden** con el Collection Runner, sobre la semilla limpia.

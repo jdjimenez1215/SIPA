@@ -1,5 +1,7 @@
 # Verification Report
 
+> **Actualización posterior (2026-11-16):** W4 quedó cubierto con `Handlers/InscripcionHandlerTests.cs` y `Handlers/CatalogHandlerTests.cs`; W5 se cubre con el E2E (cancelación/cupos); S2 con `AddProblemDetails`/`UseStatusCodePages`; S7 con el flag `Swagger:Enabled`. El rate limit y el bloqueo por cuenta están implementados en identity. Esta matriz se conserva como foto del momento de la auditoría.
+
 **Change**: inscripcion-microservice
 **Version**: N/A (specs are unversioned deltas)
 **Mode**: Standard, STATIC ONLY (Strict TDD disabled; no build, no test, no docker, no ef executed by the verifier)

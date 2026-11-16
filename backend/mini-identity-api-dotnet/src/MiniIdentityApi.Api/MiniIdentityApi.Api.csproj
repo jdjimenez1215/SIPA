@@ -10,6 +10,10 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.5" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.3">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.5" />
     <!-- Pinned: 2.4.1 (transitive from Swashbuckle) is affected by CVE-2026-49451 (patched in 2.7.5). -->
     <PackageReference Include="Microsoft.OpenApi" Version="2.7.5" />

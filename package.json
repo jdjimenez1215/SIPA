@@ -1,0 +1,12 @@
+{
+  "name": "sipa-front",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/front/*.test.mjs",
+    "test:mock": "node src/pruebas/validar-mocks.mjs"
+  },
+  "devDependencies": {
+    "jsdom": "^26.1.0"
+  }
+}

@@ -1,13 +1,14 @@
 # Cómo probar SIPA
 
-Hay **cinco suites**. Cada una valida una capa distinta, así que conviene conocerlas todas:
+Hay **seis suites**. Cada una valida una capa distinta, así que conviene conocerlas todas:
 
 | Suite | Qué valida | Necesita | Resultado esperado |
 |---|---|---|---|
-| [Tests unitarios](#1-tests-unitarios) | Reglas de negocio y casos de uso, sin base de datos | .NET SDK | **125/125** (ms) + **27/27** (identity) |
+| [Tests unitarios](#1-tests-unitarios) | Reglas de negocio y casos de uso, sin base de datos | .NET SDK | **147/147** (ms) + **30/30** (identity) |
+| [Front (jsdom)](#0-tests-del-front) | Render de sugerencia, cupos, selección y botón cancelar | Node + npm | **1/1** |
 | [E2E del backend](#2-e2e-del-backend-e2esh) | Los 21 endpoints de ms-inscripcion contra la API real | Docker | **159/159** |
-| [Colección Postman](#3-colección-postman--newman) | Lo mismo que el E2E, para correr en Postman o CI | Docker + Postman o Node | **300/300** asserts |
-| [Smoke del proxy](#4-smoke-del-proxy) | Que el front llega a **las dos** APIs a través del proxy | Todo levantado | **5/5** |
+| [Colección Postman](#3-colección-postman--newman) | Lo mismo que el E2E, para correr en Postman o CI | Docker + Postman o Node | **301/301** asserts |
+| [Smoke del proxy](#4-smoke-del-proxy) | Que el front llega a **las dos** APIs a través del proxy | Todo levantado | **6/6** |
 | [Validación del mock](#5-validación-del-mock) | Que el mock del front respeta la regla N+3 | Node | **36/36** |
 
 Y al final, una [prueba manual en el navegador](#6-prueba-manual-en-el-navegador).
@@ -28,6 +29,19 @@ API_PORT=8081 DB_PORT=5433 docker compose down -v      # borra la BD
 API_PORT=8081 DB_PORT=5433 docker compose up --build -d # recrea BD + migración + seed
 curl -s -o /dev/null -w '%{http_code}\n' http://localhost:8081/api/carreras   # esperá 200
 ```
+
+---
+
+## 0. Tests del front
+
+Renderizan la página real con jsdom y un `fetch` simulado:
+
+```bash
+npm ci
+npm test
+```
+
+Esperado: `# pass 1`.
 
 ---
 
@@ -81,7 +95,7 @@ npx newman run postman/MsInscripcion.postman_collection.json \
   --env-var host=http://localhost:8081
 ```
 
-Esperado: `assertions 300 | failed 0`.
+Esperado: `assertions 301 | failed 0`.
 
 > El orden importa: los requests crean ids que usan los siguientes, y las pruebas de concurrencia lanzan dos pedidos en paralelo desde el script de tests.
 

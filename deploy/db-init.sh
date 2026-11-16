@@ -1,15 +1,20 @@
--- Least-privilege application role. Runs only on a fresh database volume.
-\set ON_ERROR_STOP on
+#!/bin/sh
+# Crea el rol de aplicación y la base de identidad. Solo corre en un volumen nuevo.
+set -e
 
-DO $$
+APP_PASSWORD="${DB_APP_PASSWORD:-sipa_app}"
+
+psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<EOSQL
+DO \$\$
 BEGIN
     IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'sipa_app') THEN
-        CREATE ROLE sipa_app LOGIN PASSWORD 'sipa_app';
+        CREATE ROLE sipa_app LOGIN PASSWORD '${APP_PASSWORD}';
+    ELSE
+        ALTER ROLE sipa_app WITH PASSWORD '${APP_PASSWORD}';
     END IF;
 END
-$$;
+\$\$;
 
--- Identity lives in its own database so EF Core (EnsureCreated) owns the schema.
 SELECT 'CREATE DATABASE identidad OWNER sipa_app'
 WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'identidad')\gexec
 
@@ -23,3 +28,4 @@ GRANT USAGE, CREATE ON SCHEMA public TO sipa_app;
 \connect identidad
 ALTER SCHEMA public OWNER TO sipa_app;
 GRANT USAGE, CREATE ON SCHEMA public TO sipa_app;
+EOSQL

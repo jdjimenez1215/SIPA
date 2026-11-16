@@ -64,6 +64,7 @@ else
 }
 
 builder.Services.AddSingleton<IPasswordHasher, Pbkdf2PasswordHasher>();
+builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton<ITokenService, JwtTokenService>();
 
 builder.Services.AddScoped<AuthenticationService>();
@@ -134,11 +135,11 @@ builder.Services.AddRateLimiter(options =>
 
 var app = builder.Build();
 
-if (useDatabase)
+if (useDatabase && app.Configuration.GetValue("Database:ApplyMigrationsOnStartup", true))
 {
     await using var migrationScope = app.Services.CreateAsyncScope();
     var db = migrationScope.ServiceProvider.GetRequiredService<IdentityDbContext>();
-    await db.Database.EnsureCreatedAsync();
+    await db.Database.MigrateAsync();
 }
 
 await using (var seedScope = app.Services.CreateAsyncScope())

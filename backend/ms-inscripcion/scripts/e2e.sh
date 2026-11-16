@@ -274,7 +274,11 @@ t "metodo no permitido"             405 PATCH  /carreras "" METODO_NO_PERMITIDO
 st=$(curl -s -o "$TMP/last" -w '%{http_code}' -X POST "$B/carreras" -H "$AUTHH" -H 'Content-Type: text/plain' -d 'x')
 grep -q TIPO_CONTENIDO_NO_SOPORTADO "$TMP/last" && [ "$st" = 415 ] && { PASS=$((PASS+1)); echo "  PASS  415  POST /carreras (text/plain)"; } || { FAIL=$((FAIL+1)); FAILS+=("415"); echo "  FAIL  $st POST text/plain: $(cat "$TMP/last" | head -c 300)"; }
 st=$(curl -s -o /dev/null -w '%{http_code}' "http://localhost:$PORT/swagger/v1/swagger.json")
-[ "$st" = 200 ] && { PASS=$((PASS+1)); echo "  PASS  200  swagger.json"; } || { FAIL=$((FAIL+1)); FAILS+=("swagger"); echo "  FAIL  $st swagger.json"; }
+if [ "${SWAGGER_ENABLED:-false}" = "true" ]; then
+  [ "$st" = 200 ] && { PASS=$((PASS+1)); echo "  PASS  200  swagger.json"; } || { FAIL=$((FAIL+1)); FAILS+=("swagger"); echo "  FAIL  $st swagger.json"; }
+else
+  [ "$st" = 404 ] && { PASS=$((PASS+1)); echo "  PASS  404  swagger deshabilitado (default produccion)"; } || { FAIL=$((FAIL+1)); FAILS+=("swagger-off"); echo "  FAIL  $st swagger deberia estar apagado"; }
+fi
 
 echo "== Rate limiting de login"
 st429=0

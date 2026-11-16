@@ -12,7 +12,7 @@ puede leer.
 |---|---|---|
 | `malla_curricular.json` | Catálogo de asignaturas del programa | `codigo`, `creditos`, `semestre`, `prerrequisitos[]` |
 | `estudiante_prueba.json` | Trayectoria de la estudiante de prueba | `semestreActual`, `historialAcademico[]` |
-| `sugerencia_mock.json` | Respuesta esperada de `GET /api/v1/matricula/sugerencia` | `totalCreditos`, `materiasSugeridas[]`, `notificaciones[]` |
+| `sugerencia_mock.json` | Respuesta esperada de `GET /api/estudiantes/1/sugerencia?periodo=2026-2` | `totalCreditos`, `promedio`, `limiteCreditos`, `materiasSugeridas[]`, `notificaciones[]` |
 
 ---
 
@@ -187,7 +187,7 @@ Cada regla de negocio tiene un caso que la ejercita:
 
 | Caso | Código esperado |
 |---|---|
-| `GET /api/v1/matricula/sugerencia` | 200, 12 filas, 23 créditos |
+| `GET /api/estudiantes/1/sugerencia?periodo=2026-2` | 200, 12 filas, 6 sugeridas, 18 créditos |
 | Confirmar selección válida | 201 |
 | Pedir 4 asignaturas del semestre 7 | 422 |
 | Pedir `603602` sin `603503` aprobado | 422 |

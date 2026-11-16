@@ -1,0 +1,105 @@
+# Pipeline de Azure DevOps para SIPA.
+# Requiere:
+#   - Service connection de Docker al ACR: $(acrServiceConnection)
+#   - Service connection de Azure: $(azureServiceConnection)
+#   - Variable group con: acrName, resourceGroup, apiApp, identityApp, frontApp
+#   - Secretos en Key Vault: JWT_KEY, ConnectionStrings--Default (api e identity)
+
+trigger:
+  branches:
+    include: [main]
+
+pr:
+  branches:
+    include: [main]
+
+variables:
+  tag: $(Build.BuildId)
+
+stages:
+  - stage: Test
+    displayName: Tests
+    jobs:
+      - job: Backend
+        pool: { vmImage: ubuntu-latest }
+        steps:
+          - checkout: self
+          - task: UseDotNet@2
+            inputs: { packageType: sdk, version: 10.0.x }
+          - task: UseDotNet@2
+            inputs: { packageType: sdk, version: 8.0.x }
+          - script: dotnet test backend/ms-inscripcion/tests/MsInscripcion.UnitTests/MsInscripcion.UnitTests.csproj -c Release --nologo
+          - script: dotnet test backend/mini-identity-api-dotnet/src/MiniIdentityApi.Tests/MiniIdentityApi.Tests.csproj -c Release --nologo
+      - job: Front
+        pool: { vmImage: ubuntu-latest }
+        steps:
+          - checkout: self
+          - task: UseNode@1
+            inputs: { version: "22.x" }
+          - script: npm ci
+          - script: npm test
+          - script: npm run test:mock
+
+  - stage: BuildAndPush
+    displayName: Imágenes
+    dependsOn: Test
+    jobs:
+      - job: Docker
+        pool: { vmImage: ubuntu-latest }
+        steps:
+          - checkout: self
+          - task: Docker@2
+            displayName: api
+            inputs:
+              command: buildAndPush
+              containerRegistry: $(acrServiceConnection)
+              repository: sipa-api
+              dockerfile: backend/ms-inscripcion/Dockerfile
+              buildContext: backend/ms-inscripcion
+              tags: $(tag)
+          - task: Docker@2
+            displayName: identity
+            inputs:
+              command: buildAndPush
+              containerRegistry: $(acrServiceConnection)
+              repository: sipa-identity
+              dockerfile: backend/mini-identity-api-dotnet/Dockerfile
+              buildContext: backend/mini-identity-api-dotnet
+              tags: $(tag)
+          - task: Docker@2
+            displayName: front
+            inputs:
+              command: buildAndPush
+              containerRegistry: $(acrServiceConnection)
+              repository: sipa-front
+              dockerfile: Dockerfile.frontend
+              buildContext: .
+              tags: $(tag)
+
+  - stage: Deploy
+    displayName: Container Apps
+    dependsOn: BuildAndPush
+    jobs:
+      - deployment: Azure
+        environment: sipa
+        pool: { vmImage: ubuntu-latest }
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - task: AzureCLI@2
+                  displayName: Actualizar imágenes
+                  inputs:
+                    azureSubscription: $(azureServiceConnection)
+                    scriptType: bash
+                    scriptLocation: inlineScript
+                    inlineScript: |
+                      set -euo pipefail
+                      ACR=$(az acr show -n $(acrName) --query loginServer -o tsv)
+                      for pair in "api:$(apiApp)" "identity:$(identityApp)" "front:$(frontApp)"; do
+                        repo="${pair%%:*}"; app="${pair##*:}"
+                        az containerapp update \
+                          --resource-group "$(resourceGroup)" \
+                          --name "$app" \
+                          --image "$ACR/sipa-$repo:$(tag)"
+                      done

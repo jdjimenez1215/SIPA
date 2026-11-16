@@ -84,10 +84,10 @@ Revertir los commits del change en `feature/ms-inscripcion` (vuelven `SemesterLi
 
 ## Success Criteria
 
-- [ ] `GET /api/estudiantes/{laura}/sugerencia` equivale al **fixture corregido**: 12 filas en orden de malla; sem. 6 603601–603606 `Sugerida`, `prerrequisitoCumplido=true` (18 cr.); sem. 7 603701 y 603703 `Sugerida`; 603702, 603704, 603705, 603706 `Prerrequisito`, `prerrequisitoCumplido=false`; `totalCreditos` = **23**. La comparación ignora `id`, `periodo`, `motivo` y el contenido de `notificaciones`.
-- [ ] Toda fila de `sugerencia` trae `id` (int) válido y utilizable directamente en `materiaIds` del POST.
-- [ ] Estudiante auxiliar (tope alcanzado): exactamente 3 N+1 `Sugerida`; el resto elegible en `Prerrequisito` con `prerrequisitoCumplido=true`.
-- [ ] POST: 4 N+1 elegibles → 422 `LIMITE_SIGUIENTE_SEMESTRE_EXCEDIDO`; Laura 603601+603702 juntas → 422 `PREREQUISITO_NO_CUMPLIDO` (603702); materia de N+2 → 422 `SEMESTRE_EXCEDIDO`.
-- [ ] POST con `codigosMaterias` funciona igual que con `materiaIds`.
-- [ ] `MaxSemestersAhead` no existe en código ni config.
-- [ ] Unit tests por regla (éxito + falla), e2e, Postman y README actualizados.
+- [x] `GET /api/estudiantes/{laura}/sugerencia` equivale al **fixture corregido**: 12 filas; sem. 6 603601–603606 `Sugerida` (18 cr.); 603701 y 603703 bloqueadas por `LIMITE_CREDITOS_EXCEDIDO`; 603702, 603704, 603705 y 603706 por prerrequisito; `totalCreditos` = **18**. La comparación ignora `id`, `periodo`, `motivo` y `notificaciones`.
+- [x] Toda fila de `sugerencia` trae `id` (int) válido y utilizable directamente en `materiaIds` del POST.
+- [x] Estudiante auxiliar (tope alcanzado): exactamente 3 N+1 `Sugerida`; el resto elegible en `Prerrequisito` con `prerrequisitoCumplido=true`.
+- [x] POST: 4 N+1 elegibles → 422 `LIMITE_SIGUIENTE_SEMESTRE_EXCEDIDO`; Laura 603601+603702 juntas → 422 `PREREQUISITO_NO_CUMPLIDO` (603702); materia de N+2 → 422 `SEMESTRE_EXCEDIDO`.
+- [x] POST con `codigosMaterias` funciona igual que con `materiaIds`.
+- [x] `MaxSemestersAhead` no existe en código ni config.
+- [x] Unit tests por regla (éxito + falla), e2e, Postman y README actualizados.

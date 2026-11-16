@@ -63,8 +63,8 @@ No commits yet. Delete `src/`, `tests/` and the root files; run `docker compose 
 - SDK 10 plus the net8 targeting pack (NuGet), Docker, PostgreSQL 16 image
 
 ## Success Criteria
-- [ ] Each of the 6 rules is its own class with success and failure tests
-- [ ] POST is atomic; 422 lists ALL violations, each with its materia
-- [ ] Concurrent POSTs never exceed CuposMaximos
-- [ ] `docker compose up` gives a migrated, seeded API with Swagger
-- [ ] Controllers have no business logic; the README has assumptions and Mermaid diagrams
+- [x] Each of the 6 rules is its own class with success and failure tests
+- [x] POST is atomic; 422 lists ALL violations, each with its materia
+- [x] Concurrent POSTs never exceed CuposMaximos
+- [x] `docker compose up` gives a migrated, seeded API with Swagger
+- [x] Controllers have no business logic; the README has assumptions and Mermaid diagrams
