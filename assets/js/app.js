@@ -280,17 +280,35 @@ const UIManager = {
         fila.setAttribute('aria-disabled', 'true');
       }
 
-      // Casilla para elegir qué materias inscribir (las bloqueadas no se pueden marcar).
+      // Casilla visible para elegir qué materias inscribir (las bloqueadas no se pueden marcar).
       const tdSeleccion = document.createElement('td');
-      const check = document.createElement('input');
-      check.type = 'checkbox';
-      check.className = 'materia-check';
-      check.checked = !bloqueada;
-      check.disabled = bloqueada;
-      check.setAttribute('aria-label', `Incluir ${materia.codigo}`);
-      check.setAttribute('data-codigo', materia.codigo);
-      if (materia.id != null) check.setAttribute('data-id', materia.id);
-      tdSeleccion.appendChild(check);
+      tdSeleccion.className = 'col-seleccion';
+      if (!bloqueada) {
+        const label = document.createElement('label');
+        label.className = 'materia-toggle';
+        label.setAttribute('title', 'Desmarcar para no inscribir');
+
+        const check = document.createElement('input');
+        check.type = 'checkbox';
+        check.className = 'materia-check';
+        check.checked = true;
+        check.setAttribute('aria-label', `Incluir ${materia.codigo}`);
+        check.setAttribute('data-codigo', materia.codigo);
+        if (materia.id != null) check.setAttribute('data-id', materia.id);
+
+        const caja = document.createElement('span');
+        caja.className = 'materia-toggle-box';
+        caja.setAttribute('aria-hidden', 'true');
+
+        label.appendChild(check);
+        label.appendChild(caja);
+        tdSeleccion.appendChild(label);
+      } else {
+        const guion = document.createElement('span');
+        guion.className = 'text-muted';
+        guion.textContent = '—';
+        tdSeleccion.appendChild(guion);
+      }
       fila.appendChild(tdSeleccion);
 
       fila.appendChild(this._celda(materia.codigo));
