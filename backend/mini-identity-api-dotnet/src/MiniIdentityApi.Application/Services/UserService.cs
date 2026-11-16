@@ -28,12 +28,14 @@ public class UserService
     {
         var user = _userRepository.FindById(id) ?? throw new KeyNotFoundException("User not found.");
         user.Activate();
+        _userRepository.Save(user);
     }
 
     public void Deactivate(Guid id)
     {
         var user = _userRepository.FindById(id) ?? throw new KeyNotFoundException("User not found.");
         user.Deactivate();
+        _userRepository.Save(user);
     }
 
     public void AssignRole(Guid userId, string roleName)
@@ -42,5 +44,6 @@ public class UserService
         var role = _roleRepository.FindByName(roleName) ?? throw new KeyNotFoundException("Role not found.");
 
         user.AddRole(role);
+        _userRepository.Save(user);
     }
 }

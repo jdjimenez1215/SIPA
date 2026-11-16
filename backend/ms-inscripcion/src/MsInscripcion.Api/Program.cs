@@ -150,6 +150,9 @@ builder.Services.AddInfrastructure(builder.Configuration);
 
 var app = builder.Build();
 
+if (!app.Environment.IsDevelopment())
+    app.UseHsts();
+
 app.UseSerilogRequestLogging();
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 app.UseStatusCodePages();

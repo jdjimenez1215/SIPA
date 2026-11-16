@@ -1,4 +1,6 @@
-﻿using MiniIdentityApi.Application.DTOs.Auth;
+﻿using System.Net.Mail;
+using System.Text.RegularExpressions;
+using MiniIdentityApi.Application.DTOs.Auth;
 using MiniIdentityApi.Application.Interfaces;
 using MiniIdentityApi.Domain.Entities;
 using MiniIdentityApi.Domain.Enums;
@@ -23,17 +25,23 @@ public class AuthenticationService
 
     public void Register(RegisterRequest request)
     {
-        if (string.IsNullOrWhiteSpace(request.Username))
-            throw new ArgumentException("Username is required.");
+        var username = (request.Username ?? string.Empty).Trim();
+        var email = (request.Email ?? string.Empty).Trim();
 
-        if (string.IsNullOrWhiteSpace(request.Email))
-            throw new ArgumentException("Email is required.");
+        if (!Regex.IsMatch(username, @"^[A-Za-z0-9._-]{3,50}$"))
+            throw new ArgumentException(
+                "Username must be 3-50 characters and use only letters, digits, dot, dash or underscore.");
 
-        if (string.IsNullOrWhiteSpace(request.Password))
-            throw new ArgumentException("Password is required.");
+        if (!MailAddress.TryCreate(email, out var address) || address.Address != email)
+            throw new ArgumentException("Email is not valid.");
 
-        var existing = _userRepository.FindByUsernameOrEmail(request.Username)
-                      ?? _userRepository.FindByUsernameOrEmail(request.Email);
+        ValidatePassword(request.Password);
+
+        if (request.EstudianteId is <= 0)
+            throw new ArgumentException("EstudianteId must be a positive number when provided.");
+
+        var existing = _userRepository.FindByUsernameOrEmail(username)
+                      ?? _userRepository.FindByUsernameOrEmail(email);
 
         if (existing is not null)
             throw new InvalidOperationException("User already exists.");
@@ -42,9 +50,24 @@ public class AuthenticationService
         var hash = _passwordHasher.Hash(request.Password, salt);
 
         var credential = new Credential(hash, salt);
-        var user = new User(request.Username, request.Email, credential);
+        var user = new User(username, email, credential, request.EstudianteId);
 
         _userRepository.Save(user);
+    }
+
+    private static void ValidatePassword(string password)
+    {
+        if (string.IsNullOrWhiteSpace(password) || password.Length < 8)
+            throw new ArgumentException("Password must be at least 8 characters long.");
+
+        if (!password.Any(char.IsUpper) ||
+            !password.Any(char.IsLower) ||
+            !password.Any(char.IsDigit) ||
+            !password.Any(c => !char.IsLetterOrDigit(c)))
+        {
+            throw new ArgumentException(
+                "Password must contain at least one uppercase letter, one lowercase letter, one digit and one symbol.");
+        }
     }
 
     public AuthResponse Login(LoginRequest request)
@@ -70,6 +93,7 @@ public class AuthenticationService
             AccessToken = _tokenService.GenerateToken(user),
             Username = user.Username,
             Email = user.Email,
+            EstudianteId = user.EstudianteId,
             Roles = user.Roles.Select(r => r.Name).ToList()
         };
     }

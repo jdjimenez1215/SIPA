@@ -28,7 +28,8 @@
    ============================================================ */
 const API_CONFIG = {
   baseURL: '',                               // el proxy local reenvía a la API
-  estudianteId: 1,                           // demo: Laura Gómez Ríos
+  // Lo define el login: cuenta de estudiante vinculada; Admin cae en la demo (Laura).
+  estudianteId: Number(sessionStorage.getItem('sipa.auth.estudianteId')) || 1,
   periodo: '2026-2',
   endpoints: {
     sugerencia: (id, periodo) => `/api/estudiantes/${id}/sugerencia?periodo=${encodeURIComponent(periodo)}`,
@@ -515,6 +516,15 @@ const App = {
   },
 
   _suscribirEventos() {
+    const cerrarSesion = document.getElementById('cerrar-sesion');
+    if (cerrarSesion) {
+      cerrarSesion.addEventListener('click', evento => {
+        evento.preventDefault();
+        sessionStorage.clear();
+        window.location.replace('index.html');
+      });
+    }
+
     if (UIManager.el.btnConfirmar) {
       UIManager.el.btnConfirmar.addEventListener('click', () => this.confirmarMatricula());
     }

@@ -213,11 +213,11 @@ docker compose up --build
 
 ### Pruebas E2E de todos los endpoints
 
-`scripts/e2e.sh` ejecuta 147 chequeos sobre los 21 endpoints: autenticación/autorización (401 sin token, 403 sin rol `Admin`), la sugerencia de los cinco estudiantes de la semilla, la regla N + máx. 3 (tope, adeudada, activas que cuentan), prerrequisitos estrictos, `codigosMaterias`, camino feliz, validaciones, atomicidad, dos carreras concurrentes (mismo estudiante con materias que se cruzan y último cupo) y los errores del framework en formato ProblemDetails. Necesita **MiniIdentityApi corriendo** (`AUTH_ORIGIN`, por defecto `http://localhost:5132`) **con la misma `JWT_KEY` que el contenedor** y la semilla limpia, porque cada paso modifica el estado:
+`scripts/e2e.sh` ejecuta 154 chequeos sobre los 21 endpoints: autenticación/autorización (401 sin token, 403 sin rol `Admin`, registro solo Admin, bloqueo IDOR entre estudiantes y rate limiting del login), la sugerencia de los cinco estudiantes de la semilla, la regla N + máx. 3 (tope, adeudada, activas que cuentan), prerrequisitos estrictos, `codigosMaterias`, camino feliz, validaciones, atomicidad, dos carreras concurrentes (mismo estudiante con materias que se cruzan y último cupo) y los errores del framework en formato ProblemDetails. Necesita **MiniIdentityApi corriendo** (`AUTH_ORIGIN`, por defecto `http://localhost:5132`) **con la misma `JWT_KEY` que el contenedor** y la semilla limpia, porque cada paso modifica el estado:
 
 ```bash
 docker compose down -v && docker compose up --build -d
-PORT=8080 bash scripts/e2e.sh   # termina con "TOTAL: 147 passed, 0 failed"
+PORT=8080 bash scripts/e2e.sh   # termina con "TOTAL: 154 passed, 0 failed"
 ```
 
 ### Colección de Postman

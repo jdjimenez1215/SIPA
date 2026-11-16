@@ -60,12 +60,33 @@ race() { # race NAME A_STUDENT A_IDS B_STUDENT B_IDS LOSER_CODE
 echo "== Autenticacion y autorizacion"
 st_no_token=$(curl -s -o /dev/null -w '%{http_code}' "$B/carreras")
 ck "sin token -> 401" test "$st_no_token" = 401
-curl -s -o /dev/null -X POST "$AUTH/api/auth/register" -H "$J" \
-  -d '{"username":"e2e_user","email":"e2e_user@example.com","password":"E2ePass123!"}'
+
+st_reg_anon=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$AUTH/api/auth/register" -H "$J" \
+  -d '{"username":"anon","email":"anon@example.com","password":"AnonPass123!"}')
+ck "registro sin token -> 401" test "$st_reg_anon" = 401
+
+st_reg_weak=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$AUTH/api/auth/register" -H "$J" -H "$AUTHH" \
+  -d '{"username":"weak_user","email":"weak@example.com","password":"123"}')
+ck "registro con clave debil -> 400" test "$st_reg_weak" = 400
+
+st_reg=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$AUTH/api/auth/register" -H "$J" -H "$AUTHH" \
+  -d '{"username":"e2e_user","email":"e2e_user@example.com","password":"E2ePass123!","estudianteId":2}')
+ck "registro como Admin -> 201" test "$st_reg" = 201
+
 USER_TOKEN=$(curl -s -X POST "$AUTH/api/auth/login" -H "$J" \
   -d '{"usernameOrEmail":"e2e_user","password":"E2ePass123!"}' | grep -oP '"accessToken":"\K[^"]+')
+AUSERH="Authorization: Bearer $USER_TOKEN"
+
+st_own=$(curl -s -o /dev/null -w '%{http_code}' "$B/estudiantes/2/sugerencia" -H "$AUSERH")
+ck "estudiante accede a su propia sugerencia -> 200" test "$st_own" = 200
+st_other=$(curl -s -o /dev/null -w '%{http_code}' "$B/estudiantes/1/sugerencia" -H "$AUSERH")
+ck "estudiante accede a otro estudiante -> 403" test "$st_other" = 403
+st_enroll_other=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$B/inscripciones" -H "$J" -H "$AUSERH" \
+  -d '{"estudianteId":1,"periodo":"2026-2","codigosMaterias":["603601"]}')
+ck "estudiante inscribe a otro estudiante -> 403" test "$st_enroll_other" = 403
+
 st_no_admin=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$B/carreras" \
-  -H "$J" -H "Authorization: Bearer $USER_TOKEN" -d '{"codigo":"NOP","nombre":"Nope","duracionSemestres":1}')
+  -H "$J" -H "$AUSERH" -d '{"codigo":"NOP","nombre":"Nope","duracionSemestres":1}')
 ck "usuario sin rol Admin -> 403" test "$st_no_admin" = 403
 
 echo "== Carreras"
@@ -242,6 +263,15 @@ st=$(curl -s -o "$TMP/last" -w '%{http_code}' -X POST "$B/carreras" -H "$AUTHH" 
 grep -q TIPO_CONTENIDO_NO_SOPORTADO "$TMP/last" && [ "$st" = 415 ] && { PASS=$((PASS+1)); echo "  PASS  415  POST /carreras (text/plain)"; } || { FAIL=$((FAIL+1)); FAILS+=("415"); echo "  FAIL  $st POST text/plain: $(cat "$TMP/last" | head -c 300)"; }
 st=$(curl -s -o /dev/null -w '%{http_code}' "http://localhost:$PORT/swagger/v1/swagger.json")
 [ "$st" = 200 ] && { PASS=$((PASS+1)); echo "  PASS  200  swagger.json"; } || { FAIL=$((FAIL+1)); FAILS+=("swagger"); echo "  FAIL  $st swagger.json"; }
+
+echo "== Rate limiting de login"
+st429=0
+for i in $(seq 1 6); do
+  st=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$AUTH/api/auth/login" -H "$J" \
+    -d '{"usernameOrEmail":"admin","password":"ClaveIncorrecta1!"}')
+  [ "$st" = 429 ] && st429=1
+done
+ck "login bloqueado con 429 tras varios intentos" test "$st429" = 1
 
 echo; echo "TOTAL: $PASS passed, $FAIL failed"
 for f in "${FAILS[@]}"; do echo "  - $f"; done

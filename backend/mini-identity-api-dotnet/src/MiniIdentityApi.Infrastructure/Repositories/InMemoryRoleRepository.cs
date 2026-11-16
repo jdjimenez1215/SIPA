@@ -17,6 +17,10 @@ public class InMemoryRoleRepository : IRoleRepository
 
     public void Save(Role role)
     {
-        _roles.Add(role);
+        var index = _roles.FindIndex(existing => existing.Id == role.Id);
+        if (index >= 0)
+            _roles[index] = role;
+        else
+            _roles.Add(role);
     }
 }

@@ -13,11 +13,23 @@ public class User
     public Credential Credential { get; private set; }
     public List<Role> Roles { get; private set; } = new();
 
-    public User(string username, string email, Credential credential)
+    // Null for staff accounts (Admin); set for accounts that act on behalf of a student.
+    public int? EstudianteId { get; private set; }
+
+    public User(string username, string email, Credential credential, int? estudianteId = null)
     {
         Username = username;
         Email = email;
         Credential = credential;
+        EstudianteId = estudianteId;
+    }
+
+    // EF Core materialization (the credential is an owned navigation, not a constructor parameter).
+    private User()
+    {
+        Username = string.Empty;
+        Email = string.Empty;
+        Credential = null!;
     }
 
     public void Activate() => Status = UserStatus.Active;

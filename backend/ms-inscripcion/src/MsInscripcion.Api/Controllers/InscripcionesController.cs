@@ -1,6 +1,7 @@
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using MsInscripcion.Api.Security;
 using MsInscripcion.Application.Features.Inscripciones.Commands;
 using MsInscripcion.Application.Features.Inscripciones.Dtos;
 
@@ -23,12 +24,17 @@ public class InscripcionesController(ISender mediator) : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Enroll([FromBody] EnrollRequest request, CancellationToken ct)
     {
+        if (!StudentAccess.CanAccess(User, request.EstudianteId))
+            return Forbid();
+
         var result = await mediator.Send(
             new EnrollCommand(request.EstudianteId, request.Periodo, request.MateriaIds, request.CodigosMaterias), ct);
         return Created($"/api/estudiantes/{request.EstudianteId}/inscripciones?periodo={request.Periodo}", result);
     }
 
     /// <summary>Cancela una inscripción activa (cancelación lógica).</summary>
+    // Cancelling by inscription id can target any student, so only Admins can do it.
+    [Authorize(Roles = "Admin")]
     [HttpDelete("{id:int}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]

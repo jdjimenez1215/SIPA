@@ -1,6 +1,7 @@
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using MsInscripcion.Api.Security;
 using MsInscripcion.Application.Features.Inscripciones.Dtos;
 using MsInscripcion.Application.Features.Inscripciones.Queries;
 using MsInscripcion.Application.Features.Materias.Dtos;
@@ -20,16 +21,26 @@ public class EstudiantesController(ISender mediator) : ControllerBase
     [ProducesResponseType(typeof(IReadOnlyList<InscripcionDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetInscripciones(int id, [FromQuery] string? periodo, CancellationToken ct) =>
-        Ok(await mediator.Send(new GetInscripcionesQuery(id, periodo), ct));
+    public async Task<IActionResult> GetInscripciones(int id, [FromQuery] string? periodo, CancellationToken ct)
+    {
+        if (!StudentAccess.CanAccess(User, id))
+            return Forbid();
+
+        return Ok(await mediator.Send(new GetInscripcionesQuery(id, periodo), ct));
+    }
 
     /// <summary>Sugerencia de inscripción del estudiante para un período (por defecto el período actual).</summary>
     [HttpGet("sugerencia")]
     [ProducesResponseType(typeof(SugerenciaDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetSugerencia(int id, [FromQuery] string? periodo, CancellationToken ct) =>
-        Ok(await mediator.Send(new GetSugerenciaQuery(id, periodo), ct));
+    public async Task<IActionResult> GetSugerencia(int id, [FromQuery] string? periodo, CancellationToken ct)
+    {
+        if (!StudentAccess.CanAccess(User, id))
+            return Forbid();
+
+        return Ok(await mediator.Send(new GetSugerenciaQuery(id, periodo), ct));
+    }
 
     /// <summary>Materias que el estudiante puede inscribir hoy (informativo, sin bloqueo).</summary>
     [Obsolete("Usar GET /api/estudiantes/{id}/sugerencia")]
@@ -37,6 +48,11 @@ public class EstudiantesController(ISender mediator) : ControllerBase
     [ProducesResponseType(typeof(IReadOnlyList<MateriaDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetMateriasDisponibles(int id, [FromQuery] string? periodo, CancellationToken ct) =>
-        Ok(await mediator.Send(new MateriasDisponiblesQuery(id, periodo), ct));
+    public async Task<IActionResult> GetMateriasDisponibles(int id, [FromQuery] string? periodo, CancellationToken ct)
+    {
+        if (!StudentAccess.CanAccess(User, id))
+            return Forbid();
+
+        return Ok(await mediator.Send(new MateriasDisponiblesQuery(id, periodo), ct));
+    }
 }

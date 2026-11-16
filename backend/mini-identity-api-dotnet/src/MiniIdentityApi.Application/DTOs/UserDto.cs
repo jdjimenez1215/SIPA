@@ -12,6 +12,7 @@ public sealed class UserDto
     public string Username { get; init; } = string.Empty;
     public string Email { get; init; } = string.Empty;
     public string Status { get; init; } = string.Empty;
+    public int? EstudianteId { get; init; }
     public IReadOnlyList<string> Roles { get; init; } = [];
 
     public static UserDto FromEntity(User user) => new()
@@ -20,6 +21,7 @@ public sealed class UserDto
         Username = user.Username,
         Email = user.Email,
         Status = user.Status.ToString(),
+        EstudianteId = user.EstudianteId,
         Roles = user.Roles.Select(role => role.Name).ToList()
     };
 }

@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using MiniIdentityApi.Application.DTOs.Auth;
 using MiniIdentityApi.Application.Services;
 
@@ -15,6 +17,8 @@ public class AuthController : ControllerBase
         _authenticationService = authenticationService;
     }
 
+    // Only an Admin can create accounts (and optionally link them to a student).
+    [Authorize(Roles = "Admin")]
     [HttpPost("register")]
     public IActionResult Register([FromBody] RegisterRequest request)
     {
@@ -22,6 +26,7 @@ public class AuthController : ControllerBase
         return StatusCode(StatusCodes.Status201Created, new { message = "User registered successfully." });
     }
 
+    [EnableRateLimiting("login")]
     [HttpPost("login")]
     public ActionResult<AuthResponse> Login([FromBody] LoginRequest request)
     {

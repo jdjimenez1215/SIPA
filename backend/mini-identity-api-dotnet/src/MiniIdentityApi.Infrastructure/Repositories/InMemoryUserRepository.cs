@@ -20,6 +20,11 @@ public class InMemoryUserRepository : IUserRepository
 
     public void Save(User user)
     {
-        _users.Add(user);
+        // Upsert: services save both new and existing (modified) users.
+        var index = _users.FindIndex(existing => existing.Id == user.Id);
+        if (index >= 0)
+            _users[index] = user;
+        else
+            _users.Add(user);
     }
 }

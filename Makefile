@@ -14,6 +14,12 @@ SHELL := /bin/bash
 ROOT_DIR           := $(shell pwd)
 RUN_DIR            := $(ROOT_DIR)/.run
 
+# JWT compartido entre identity y ms-inscripcion: se toma de SIPA/.env si existe.
+-include $(ROOT_DIR)/.env
+ifdef JWT_KEY
+export JWT_KEY
+endif
+
 IDENTITY_DIR       := $(ROOT_DIR)/backend/mini-identity-api-dotnet
 IDENTITY_PROJECT   := $(IDENTITY_DIR)/src/MiniIdentityApi.Api
 IDENTITY_PORT      := 5132

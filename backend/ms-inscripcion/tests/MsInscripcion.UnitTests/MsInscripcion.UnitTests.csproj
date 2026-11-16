@@ -18,5 +18,6 @@
     <ProjectReference Include="..\..\src\MsInscripcion.Domain\MsInscripcion.Domain.csproj" />
     <ProjectReference Include="..\..\src\MsInscripcion.Application\MsInscripcion.Application.csproj" />
     <ProjectReference Include="..\..\src\MsInscripcion.Infrastructure\MsInscripcion.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\MsInscripcion.Api\MsInscripcion.Api.csproj" />
   </ItemGroup>
 </Project>

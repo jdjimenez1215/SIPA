@@ -24,9 +24,8 @@
 const LOGIN_CONFIG = {
   baseURL: '/api',
   endpoints: {
-    login:             '/auth/login',
-    recuperarPassword: '/auth/recuperar-password',
-    consultarUsuario:  '/auth/consultar-usuario'
+    login: '/auth/login'
+    // Recuperación de contraseña y consulta de usuario: no implementadas.
   },
   rutaTrasLogin: 'sugerencia-matricula.html'   // adonde va tras un 200 del login
 };
@@ -48,21 +47,17 @@ const LoginApi = {
   },
 
   /**
-   * POST /auth/recuperar-password
-   * @param   {string} usuario
-   * @returns {Promise<Object>} { exito, mensaje }
+   * Recuperación de contraseña: fuera de alcance. No llama a la red.
    */
-  async recuperarPassword(usuario) {
-    return this._post(LOGIN_CONFIG.endpoints.recuperarPassword, { usuario });
+  async recuperarPassword() {
+    return { exito: false, mensaje: 'La recuperación de contraseña no está disponible.' };
   },
 
   /**
-   * POST /auth/consultar-usuario
-   * @param   {string} documento
-   * @returns {Promise<Object>} { usuario }
+   * Consulta de usuario: fuera de alcance. No llama a la red.
    */
-  async consultarUsuario(documento) {
-    return this._post(LOGIN_CONFIG.endpoints.consultarUsuario, { documento });
+  async consultarUsuario() {
+    return { usuario: null, mensaje: 'La consulta de usuario no está disponible.' };
   },
 
   /** Transporte común: JSON de ida y vuelta + control de estado HTTP. */
@@ -188,6 +183,11 @@ const LoginApp = {
         throw new Error('La respuesta de autenticación no contiene un token.');
       }
       sessionStorage.setItem('sipa.auth.token', token);
+      if (sesion.estudianteId != null) {
+        sessionStorage.setItem('sipa.auth.estudianteId', String(sesion.estudianteId));
+      } else {
+        sessionStorage.removeItem('sipa.auth.estudianteId');
+      }
       if (sesion.usuario) {
         sessionStorage.setItem('sipa.auth.user', JSON.stringify(sesion.usuario));
       } else if (sesion.user) {
@@ -211,48 +211,15 @@ const LoginApp = {
     }
   },
 
-  /** Enlace "Recuperar contraseña" (#recuperaPWD). */
-  async recuperarPassword() {
-    const usuario = (LoginUI.el.usuario && LoginUI.el.usuario.value || '').trim();
-    if (!usuario) {
-      LoginUI.mostrarMensaje('error', 'Indique su usuario para recuperar la contraseña.');
-      return;
-    }
-    if (!window.confirm(`¿Recuperar la contraseña del usuario "${usuario}"?`)) return;
-
-    LoginUI.limpiarMensaje();
-    try {
-      const resultado = await LoginApi.recuperarPassword(usuario);
-      // El contrato exige responder siempre 200 aunque el usuario no exista
-      // (evita enumerar usuarios): el texto del correo lo decide el backend.
-      LoginUI.mostrarMensaje('success',
-        (resultado && resultado.mensaje) ||
-        'Si el usuario existe, la contraseña llegará a su correo. Revise también el spam.');
-    } catch (error) {
-      console.error('[SIPA] Error recuperando contraseña:', error);
-      LoginUI.mostrarMensaje('error', 'El servicio de recuperación no está disponible en este momento.');
-    }
+  /** Enlace "Recuperar contraseña" (#recuperaPWD): deshabilitado a propósito. */
+  recuperarPassword() {
+    LoginUI.mostrarMensaje('error', 'La recuperación de contraseña no está disponible.');
   },
 
-  /** Botón "Consultar" del modal #modalConsulta. */
-  async consultarUsuario(evento) {
+  /** Botón "Consultar" del modal #modalConsulta: deshabilitado a propósito. */
+  consultarUsuario(evento) {
     if (evento) evento.preventDefault();
-
-    const documento = (LoginUI.el.documento && LoginUI.el.documento.value || '').trim();
-    if (!documento) {
-      LoginUI.mostrarConsulta('Ingrese su número de documento.');
-      return;
-    }
-
-    LoginUI.mostrarConsulta('Consultando…');
-    try {
-      const datos = await LoginApi.consultarUsuario(documento);
-      LoginUI.mostrarConsulta((datos && datos.usuario) ? `Usuario: ${datos.usuario}` : 'Documento no registrado.');
-    } catch (error) {
-      console.error('[SIPA] Error consultando usuario:', error);
-      LoginUI.mostrarConsulta(error.status === 404 ? 'Documento no registrado.'
-                                                   : 'El servicio de consulta no está disponible.');
-    }
+    LoginUI.mostrarConsulta('La consulta de usuario no está disponible.');
   }
 };
 

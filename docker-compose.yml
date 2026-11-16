@@ -18,6 +18,8 @@ services:
       - "127.0.0.1:${DB_PORT:-5432}:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+      # Crea el rol de aplicación con permisos mínimos (solo en volumen nuevo).
+      - ./deploy/db-init.sql:/docker-entrypoint-initdb.d/01-app-user.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d inscripcion"]
       interval: 5s
@@ -33,8 +35,9 @@ services:
         condition: service_healthy
     environment:
       ASPNETCORE_ENVIRONMENT: Production
-      Swagger__Enabled: "true"
-      ConnectionStrings__Default: "Host=db;Port=5432;Database=inscripcion;Username=postgres;Password=postgres"
+      ASPNETCORE_FORWARDEDHEADERS_ENABLED: "true"
+      Swagger__Enabled: "${SWAGGER_ENABLED:-true}"
+      ConnectionStrings__Default: "Host=db;Port=5432;Database=inscripcion;Username=sipa_app;Password=sipa_app"
       Enrollment__MaxNextSemesterSubjects: "3"
       Enrollment__CurrentPeriod: "2026-2"
       Database__ApplyMigrationsOnStartup: "true"
@@ -54,8 +57,13 @@ services:
   identity:
     build:
       context: ./backend/mini-identity-api-dotnet
+    depends_on:
+      db:
+        condition: service_healthy
     environment:
       ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_FORWARDEDHEADERS_ENABLED: "true"
+      ConnectionStrings__Default: "Host=db;Port=5432;Database=identidad;Username=sipa_app;Password=sipa_app"
       Jwt__Issuer: "MiniIdentityApi"
       Jwt__Audience: "MiniIdentityApiUsers"
       Jwt__Key: "${JWT_KEY:?Define JWT_KEY (openssl rand -base64 48) antes de levantar el stack}"

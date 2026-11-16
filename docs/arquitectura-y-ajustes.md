@@ -20,7 +20,7 @@ flowchart LR
 |---|---|---|
 | **Front** (`index.html`, `sugerencia-matricula.html`, `assets/`) | HTML + jQuery + Bootstrap 3 | Login y pantalla de sugerencia de matrícula |
 | **Proxy** (`dev-server.py`) | Python (stdlib) | Sirve el front y reenvía cada `/api/*` a la API que corresponde |
-| **Identity** (`backend/mini-identity-api-dotnet`) | .NET, en memoria | Login y emisión del token JWT |
+| **Identity** (`backend/mini-identity-api-dotnet`) | .NET, EF Core + PostgreSQL (memoria si no hay connection string) | Login, usuarios/roles y emisión del token JWT |
 | **ms-inscripcion** (`backend/ms-inscripcion`) | .NET 8, EF Core, PostgreSQL | Reglas de inscripción, sugerencia de materias, catálogo |
 
 ### ms-inscripcion por dentro (Clean Architecture)
@@ -135,10 +135,12 @@ Los dos últimos de la tabla ya venían resueltos en el historial del microservi
 
 ## 4. Limitaciones conocidas
 
-- El `estudianteId` y el `periodo` están **fijos** en `assets/js/app.js` (`API_CONFIG`). Sirve para la demo, pero cualquiera podría cambiar el id. Lo correcto es validar el JWT en ms-inscripcion y exponer `/api/estudiantes/me`.
-- Identity responde **500** (no 401) con credenciales incorrectas.
-- No hay control de sesión en el front: el enlace "Cerrar Sesión" apunta al sistema de Unillanos y la página de sugerencia no exige estar logueado.
+- El `periodo` sigue **fijo** en `2026-2`. El `estudianteId` ya no se puede manipular: sale del claim `estudianteId` del JWT y ms-inscripcion devuelve `403` si no coincide (Admin puede operar sobre cualquiera). Falta una pantalla para elegir período.
+- La recuperación de contraseña y la consulta de usuario están **deshabilitadas a propósito** (no hay endpoints).
+- Identity usa `EnsureCreated` en vez de migraciones EF: si cambia el modelo de usuarios/roles hay que recrear la base `identidad` o agregar migraciones.
+- El rate limiting del login es por IP (5/min); no hay bloqueo por cuenta.
 - Cupos y horarios del seed son **inventados**: la malla de Unillanos no los trae.
+- El front usa jQuery 2.2.4 / Bootstrap 3.3.6 (EOL); actualizarlos requiere migrar la plantilla.
 
 ---
 

@@ -37,8 +37,8 @@ The solution is organized into four main projects:
 Handles authentication-related operations.
 
 Endpoints:
-- `POST /api/auth/register`: registers a new user with username, email, and password.
-- `POST /api/auth/login`: validates credentials and returns a JWT access token.
+- `POST /api/auth/register`: creates a user. **Requires `Admin` role.** Validates username, email and a strong password (8+ chars, upper, lower, digit, symbol); accepts an optional `estudianteId` to link the account to a student.
+- `POST /api/auth/login`: validates credentials and returns a JWT access token. Limited to 5 attempts per minute per IP (`429`).
 
 ### UsersController
 Handles user administration.
@@ -160,11 +160,12 @@ Represents the current status of a user:
 
 ## Infrastructure components
 
-### InMemoryUserRepository
-Stores users in memory using a `List<User>`.
+### EfUserRepository / EfRoleRepository
+Persist users, roles and permissions in PostgreSQL (`IdentityDbContext`) when `ConnectionStrings:Default` is configured.
+The API creates the schema with `EnsureCreated` and seeds `admin` and the demo student `laura`.
 
-### InMemoryRoleRepository
-Stores roles in memory using a `List<Role>`.
+### InMemoryUserRepository / InMemoryRoleRepository
+Fallback used when no connection string is configured (unit tests and quick local runs). Data is lost on restart.
 
 ### Pbkdf2PasswordHasher
 Generates salts, derives passwords with PBKDF2-HMAC-SHA256 (210,000 iterations) and verifies them in constant time.
@@ -258,14 +259,15 @@ The cleanest option is **seeding** an initial admin role and admin user.
 
 ## Example requests
 
-### Register user
-`POST /api/auth/register`
+### Register user (Admin only)
+`POST /api/auth/register` — envía `Authorization: Bearer <token de admin>`
 
 ```json
 {
   "username": "wolfang",
   "email": "wolfang@example.com",
-  "password": "Pass123!"
+  "password": "Pass123!",
+  "estudianteId": 1
 }
 ```
 

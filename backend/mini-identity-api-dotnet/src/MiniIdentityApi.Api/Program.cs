@@ -1,12 +1,18 @@
+using System.Text;
+using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Diagnostics;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using MiniIdentityApi.Application.Interfaces;
 using MiniIdentityApi.Application.Services;
 using MiniIdentityApi.Domain.Entities;
+using MiniIdentityApi.Infrastructure.Persistence;
 using MiniIdentityApi.Infrastructure.Repositories;
 using MiniIdentityApi.Infrastructure.Security;
-using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -40,8 +46,23 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
-builder.Services.AddSingleton<IUserRepository, InMemoryUserRepository>();
-builder.Services.AddSingleton<IRoleRepository, InMemoryRoleRepository>();
+// With a connection string, users and roles are persisted in PostgreSQL.
+// Without one (unit tests, quick local run), the in-memory repositories are used.
+var identityConnectionString = builder.Configuration.GetConnectionString("Default");
+var useDatabase = !string.IsNullOrWhiteSpace(identityConnectionString);
+
+if (useDatabase)
+{
+    builder.Services.AddDbContext<IdentityDbContext>(options => options.UseNpgsql(identityConnectionString));
+    builder.Services.AddScoped<IUserRepository, EfUserRepository>();
+    builder.Services.AddScoped<IRoleRepository, EfRoleRepository>();
+}
+else
+{
+    builder.Services.AddSingleton<IUserRepository, InMemoryUserRepository>();
+    builder.Services.AddSingleton<IRoleRepository, InMemoryRoleRepository>();
+}
+
 builder.Services.AddSingleton<IPasswordHasher, Pbkdf2PasswordHasher>();
 builder.Services.AddSingleton<ITokenService, JwtTokenService>();
 
@@ -95,35 +116,78 @@ builder.Services
 
 builder.Services.AddAuthorization();
 
+// Brute-force protection: at most 5 login attempts per minute per client IP.
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.AddPolicy("login", context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 5,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0,
+                AutoReplenishment = true
+            }));
+});
+
 var app = builder.Build();
 
-var userRepository = app.Services.GetRequiredService<IUserRepository>();
-var roleRepository = app.Services.GetRequiredService<IRoleRepository>();
-var passwordHasher = app.Services.GetRequiredService<IPasswordHasher>();
-
-var adminRole = roleRepository.FindByName("Admin");
-if (adminRole is null)
+if (useDatabase)
 {
-    adminRole = new Role("Admin");
-    adminRole.AddPermission(new Permission("users.read", "Can read users"));
-    adminRole.AddPermission(new Permission("users.manage", "Can manage users"));
-    adminRole.AddPermission(new Permission("roles.read", "Can read roles"));
-    adminRole.AddPermission(new Permission("roles.manage", "Can manage roles"));
-
-    roleRepository.Save(adminRole);
+    await using var migrationScope = app.Services.CreateAsyncScope();
+    var db = migrationScope.ServiceProvider.GetRequiredService<IdentityDbContext>();
+    await db.Database.EnsureCreatedAsync();
 }
 
-var adminUser = userRepository.FindByUsernameOrEmail("admin");
-if (adminUser is null)
+await using (var seedScope = app.Services.CreateAsyncScope())
 {
-    var salt = passwordHasher.GenerateSalt();
-    var hash = passwordHasher.Hash("Admin123*", salt);
+    var userRepository = seedScope.ServiceProvider.GetRequiredService<IUserRepository>();
+    var roleRepository = seedScope.ServiceProvider.GetRequiredService<IRoleRepository>();
+    var passwordHasher = seedScope.ServiceProvider.GetRequiredService<IPasswordHasher>();
 
-    var credential = new Credential(hash, salt);
-    adminUser = new User("admin", "admin@example.com", credential);
-    adminUser.AddRole(adminRole);
+    var adminRole = roleRepository.FindByName("Admin");
+    if (adminRole is null)
+    {
+        adminRole = new Role("Admin");
+        adminRole.AddPermission(new Permission("users.read", "Can read users"));
+        adminRole.AddPermission(new Permission("users.manage", "Can manage users"));
+        adminRole.AddPermission(new Permission("roles.read", "Can read roles"));
+        adminRole.AddPermission(new Permission("roles.manage", "Can manage roles"));
 
-    userRepository.Save(adminUser);
+        roleRepository.Save(adminRole);
+    }
+
+    var studentRole = roleRepository.FindByName("Estudiante");
+    if (studentRole is null)
+    {
+        studentRole = new Role("Estudiante");
+        roleRepository.Save(studentRole);
+    }
+
+    var adminUser = userRepository.FindByUsernameOrEmail("admin");
+    if (adminUser is null)
+    {
+        var salt = passwordHasher.GenerateSalt();
+        var hash = passwordHasher.Hash("Admin123*", salt);
+
+        adminUser = new User("admin", "admin@example.com", new Credential(hash, salt));
+        adminUser.AddRole(adminRole);
+        userRepository.Save(adminUser);
+    }
+
+    // Demo student account: can only read/enroll for estudianteId 1 (Laura).
+    var studentUser = userRepository.FindByUsernameOrEmail("laura");
+    if (studentUser is null)
+    {
+        var salt = passwordHasher.GenerateSalt();
+        var hash = passwordHasher.Hash("Laura123*", salt);
+
+        studentUser = new User("laura", "laura@example.com", new Credential(hash, salt), estudianteId: 1);
+        studentUser.AddRole(studentRole);
+        userRepository.Save(studentUser);
+    }
 }
 
 if (app.Environment.IsDevelopment())
@@ -132,7 +196,40 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+// Domain/service exceptions become ProblemDetails instead of opaque 500s.
+app.UseExceptionHandler(errorApp => errorApp.Run(async context =>
+{
+    var error = context.Features.Get<IExceptionHandlerFeature>()?.Error;
+    var (status, title, code) = error switch
+    {
+        UnauthorizedAccessException => (StatusCodes.Status401Unauthorized, "Credenciales inválidas", "CREDENCIALES_INVALIDAS"),
+        ArgumentException => (StatusCodes.Status400BadRequest, "Solicitud inválida", "VALIDACION_FALLIDA"),
+        KeyNotFoundException => (StatusCodes.Status404NotFound, "Recurso no encontrado", "RECURSO_NO_ENCONTRADO"),
+        InvalidOperationException => (StatusCodes.Status409Conflict, "Conflicto", "CONFLICTO"),
+        _ => (StatusCodes.Status500InternalServerError, "Error interno", "ERROR_INTERNO")
+    };
+
+    var problem = new ProblemDetails
+    {
+        Status = status,
+        Title = title,
+        Detail = status == StatusCodes.Status500InternalServerError
+            ? "Ocurrió un error inesperado."
+            : error?.Message,
+        Instance = context.Request.Path
+    };
+    problem.Extensions["code"] = code;
+
+    context.Response.StatusCode = status;
+    context.Response.ContentType = "application/problem+json";
+    await context.Response.WriteAsJsonAsync(problem);
+}));
+
+if (!app.Environment.IsDevelopment())
+    app.UseHsts();
+
 app.UseHttpsRedirection();
+app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();

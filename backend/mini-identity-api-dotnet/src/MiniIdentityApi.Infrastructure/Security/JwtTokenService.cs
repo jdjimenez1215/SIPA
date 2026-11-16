@@ -28,6 +28,9 @@ public class JwtTokenService : ITokenService
 
         claims.AddRange(user.Roles.Select(role => new Claim(ClaimTypes.Role, role.Name)));
 
+        if (user.EstudianteId is int estudianteId)
+            claims.Add(new Claim("estudianteId", estudianteId.ToString()));
+
         // JWT_KEY must win over Jwt:Key here too: the token is validated with the same
         // resolved key, so signing with the configured fallback would break validation.
         var signingKey = Environment.GetEnvironmentVariable("JWT_KEY")

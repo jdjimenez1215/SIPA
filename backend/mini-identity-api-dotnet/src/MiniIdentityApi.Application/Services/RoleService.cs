@@ -31,5 +31,6 @@ public class RoleService
                    ?? throw new KeyNotFoundException("Role not found.");
 
         role.AddPermission(new Permission(code, description));
+        _roleRepository.Save(role);
     }
 }

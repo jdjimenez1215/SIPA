@@ -29,9 +29,15 @@ docker compose up -d --build
 docker compose ps
 ```
 
-Abrí **http://localhost:5500** y entrá con `admin` / `Admin123*`.
+Abrí **http://localhost:5500** y entrá con:
+
+| Cuenta | Contraseña | Alcance |
+|---|---|---|
+| `admin` | `Admin123*` | Administra usuarios y cualquier estudiante |
+| `laura` | `Laura123*` | Solo sus datos (estudiante 1) |
 
 - Puertos: front `5500`, identity `5132`, API `8080`, PostgreSQL `5432` (todos en `127.0.0.1`).
+- Si venís de una versión anterior, la primera vez usá `docker compose down -v` para crear el rol de BD `sipa_app` y la base `identidad`.
 - Health checks: `http://localhost:8080/ready`, `http://localhost:5132/health`.
 - Detener: `docker compose down`. Reiniciar datos demo: `docker compose down -v`.
 - Si un puerto está ocupado: `API_PORT=8081`, `DB_PORT=5433`, `IDENTITY_PORT=5133`, `FRONT_PORT=5501`.
@@ -136,6 +142,17 @@ Abrir <http://localhost:5500>. Variables: `AUTH_ORIGIN` (def. `http://localhost:
 
 Si el destino está caído, el proxy responde `502 application/problem+json` (`PROXY_SIN_CONEXION`) con el origen en `detail`.
 
+### Seguridad y alcance de las cuentas
+
+- **Registro solo para Admin**: `POST /api/auth/register` exige rol `Admin`, contraseña fuerte (8+, mayúscula, minúscula, dígito y símbolo) y email válido. El Admin puede vincular la cuenta a un estudiante con `estudianteId`.
+- **Sin IDOR**: cada usuario recibe un claim `estudianteId`; `ms-inscripcion` solo permite leer/inscribir su propio estudiante (`403` si intenta otro). `Admin` puede operar sobre cualquiera. Cancelar una inscripción por id es solo para `Admin`.
+- **Fuerza bruta**: el login permite 5 intentos por minuto por IP; después responde `429`.
+- **Errores**: 400/401/403/404/409 con `application/problem+json` y `code`.
+- **Persistencia**: usuarios y roles se guardan en PostgreSQL (base `identidad`) cuando hay `ConnectionStrings__Default`; sin connection string (tests o demo local) usa memoria.
+- **BD**: la API usa el rol `sipa_app`, no el superusuario `postgres`.
+- **Recuperación de contraseña y consulta de usuario**: deshabilitadas a propósito; los enlaces muestran “no disponible” y no llaman a la red.
+- **Producción/Azure**: definir `SWAGGER_ENABLED=false`, `JWT_KEY` y la cadena de conexión como secretos. `ASPNETCORE_FORWARDEDHEADERS_ENABLED=true` ya está configurado para el ingress.
+
 ### Configuración del front (`API_CONFIG` en `assets/js/app.js`)
 
 - `estudianteId: 1` → Laura Gómez Ríos (datos semilla)
@@ -149,11 +166,11 @@ Tras iniciar sesión, `sugerencia-matricula.html` muestra a Laura con **12 filas
 ### Verificación
 
 ```bash
-# Tests unitarios (114 ms + 16 identity), sin Docker
+# Tests unitarios (119 ms + 27 identity), sin Docker
 dotnet test backend/ms-inscripcion/tests/MsInscripcion.UnitTests
 dotnet test backend/mini-identity-api-dotnet/src/MiniIdentityApi.Tests
 
-# E2E del backend (147 checks; requiere el stack arriba y BD limpia)
+# E2E del backend (154 checks; requiere el stack arriba y BD limpia)
 PORT=8080 bash backend/ms-inscripcion/scripts/e2e.sh
 
 # Smoke vía el proxy (solo lectura/rechazo; no escribe en la BD)
