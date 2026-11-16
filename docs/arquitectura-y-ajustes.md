@@ -119,6 +119,7 @@ Además:
 | Errores visibles | Un 422 marca **cada fila** con su error; los demás errores muestran el `detail` de la API |
 | Mock corregido | `sugerencia_mock.json` refleja el tope de **18 créditos** y el bloqueo por `LIMITE_CREDITOS_EXCEDIDO` |
 | Materias inscritas | Tabla debajo de la sugerencia con lo ya inscrito en el período y su total de créditos |
+| Selección y cupos | Casilla **Incluir** por materia (solo se inscriben las marcadas), contador de créditos seleccionados y columna de **cupos disponibles / máximos** |
 
 ### Bugs corregidos
 

@@ -60,7 +60,9 @@ public sealed class GetSugerenciaQueryHandler(
                 r.Materia.Semestre,
                 r.Estado,
                 r.PrerrequisitoCumplido,
-                r.Motivo))
+                r.Motivo,
+                r.CuposDisponibles,
+                r.Materia.CuposMaximos))
             .ToList();
 
         var totalCreditos = sugeridas.Where(s => s.Estado == EstadoSugerencia.Sugerida).Sum(s => s.Creditos);

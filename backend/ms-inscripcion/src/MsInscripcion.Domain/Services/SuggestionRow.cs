@@ -8,4 +8,5 @@ public sealed record SuggestionRow(
     Materia Materia,
     EstadoSugerencia Estado,
     bool PrerrequisitoCumplido,
-    string? Motivo);
+    string? Motivo,
+    int CuposDisponibles);

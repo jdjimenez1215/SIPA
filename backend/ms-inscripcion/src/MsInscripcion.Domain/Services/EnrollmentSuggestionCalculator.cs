@@ -45,10 +45,13 @@ public sealed class EnrollmentSuggestionCalculator(EnrollmentRulesEngine engine)
             var ctx = baseCtx with { Candidates = [.. accepted, materia] };
             var violations = engine.EvaluateCandidate(ctx, materia);
 
+            var occupied = baseCtx.ActiveSeatCounts.GetValueOrDefault(materia.Id);
+            var available = Math.Max(0, materia.CuposMaximos - occupied);
+
             if (violations.Count == 0)
             {
                 accepted.Add(materia);
-                rows.Add(new SuggestionRow(materia, EstadoSugerencia.Sugerida, true, null));
+                rows.Add(new SuggestionRow(materia, EstadoSugerencia.Sugerida, true, null, available));
                 continue;
             }
 
@@ -56,7 +59,8 @@ public sealed class EnrollmentSuggestionCalculator(EnrollmentRulesEngine engine)
                 materia,
                 EstadoSugerencia.Prerrequisito,
                 violations.All(v => v.Code != ErrorCodes.PrerequisiteNotMet),
-                PickMotivo(violations)));
+                PickMotivo(violations),
+                available));
         }
 
         return rows

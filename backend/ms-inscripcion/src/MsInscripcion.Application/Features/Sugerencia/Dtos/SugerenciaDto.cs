@@ -23,7 +23,9 @@ public sealed record MateriaSugeridaDto(
     int Semestre,
     EstadoSugerencia Estado,
     bool PrerrequisitoCumplido,
-    string? Motivo);
+    string? Motivo,
+    int CuposDisponibles,
+    int CuposMaximos);
 
 public sealed record NotificacionDto(
     int Id,

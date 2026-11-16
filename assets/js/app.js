@@ -212,6 +212,7 @@ const UIManager = {
       totalCreditos:       document.getElementById('total-creditos'),
       limiteCreditos:      document.getElementById('limite-creditos'),
       promedioEstudiante:  document.getElementById('promedio-estudiante'),
+      creditosSeleccionados: document.getElementById('creditos-seleccionados'),
       btnConfirmar:        document.getElementById('btn-confirmar'),
       alertContainer:      document.getElementById('alert-container'),
       navFechaHoraTxt:     document.getElementById('navFechaHoraTxt'),
@@ -240,7 +241,7 @@ const UIManager = {
     tbody.textContent = '';
     const fila = document.createElement('tr');
     const celda = document.createElement('td');
-    celda.colSpan = 5;
+    celda.colSpan = 7;
     celda.className = 'text-center text-muted';
     celda.textContent = 'Cargando…';
     fila.appendChild(celda);
@@ -260,7 +261,7 @@ const UIManager = {
     if (!Array.isArray(materias) || materias.length === 0) {
       const fila = document.createElement('tr');
       const celda = document.createElement('td');
-      celda.colSpan = 5;
+      celda.colSpan = 7;
       celda.className = 'text-center text-muted';
       celda.textContent = 'No hay asignaturas sugeridas para este periodo.';
       fila.appendChild(celda);
@@ -279,10 +280,24 @@ const UIManager = {
         fila.setAttribute('aria-disabled', 'true');
       }
 
+      // Casilla para elegir qué materias inscribir (las bloqueadas no se pueden marcar).
+      const tdSeleccion = document.createElement('td');
+      const check = document.createElement('input');
+      check.type = 'checkbox';
+      check.className = 'materia-check';
+      check.checked = !bloqueada;
+      check.disabled = bloqueada;
+      check.setAttribute('aria-label', `Incluir ${materia.codigo}`);
+      check.setAttribute('data-codigo', materia.codigo);
+      if (materia.id != null) check.setAttribute('data-id', materia.id);
+      tdSeleccion.appendChild(check);
+      fila.appendChild(tdSeleccion);
+
       fila.appendChild(this._celda(materia.codigo));
       fila.appendChild(this._celda(materia.nombre));
       fila.appendChild(this._celda(materia.creditos));
       fila.appendChild(this._celda(materia.semestre));
+      fila.appendChild(this._celdaCupos(materia));
       fila.appendChild(this._celdaEstado(materia));
 
       tbody.appendChild(fila);
@@ -292,6 +307,19 @@ const UIManager = {
   _celda(valor) {
     const td = document.createElement('td');
     td.textContent = valor;
+    return td;
+  },
+
+  /* Cupos disponibles / máximos de la materia. */
+  _celdaCupos(materia) {
+    const td = document.createElement('td');
+    if (materia.cuposDisponibles == null) {
+      td.textContent = '—';
+      return td;
+    }
+    td.textContent = `${materia.cuposDisponibles} / ${materia.cuposMaximos ?? '—'}`;
+    td.setAttribute('data-cupos', materia.cuposDisponibles);
+    if (materia.cuposDisponibles === 0) td.classList.add('text-danger');
     return td;
   },
 
@@ -573,8 +601,26 @@ const App = {
     UIManager.renderInscritas(resultado.body);
   },
 
-  _haySugeridas() {
-    return this.materiasActuales.some(m => m.estado === 'Sugerida');
+  /** Materias marcadas en la tabla (solo las Sugerida tienen checkbox habilitado). */
+  _seleccionadas() {
+    const checks = Array.from(document.querySelectorAll('#tabla-materias-body .materia-check:checked'));
+    const claves = new Set(checks.map(c => c.getAttribute('data-id') || c.getAttribute('data-codigo')));
+    return this.materiasActuales.filter(m =>
+      m.estado === 'Sugerida' && claves.has(String(m.id ?? m.codigo)));
+  },
+
+  _haySeleccionadas() {
+    return this._seleccionadas().length > 0;
+  },
+
+  /** Recalcula créditos seleccionados y habilita/deshabilita el botón. */
+  actualizarSeleccion() {
+    const seleccionadas = this._seleccionadas();
+    const creditos = seleccionadas.reduce((total, m) => total + Number(m.creditos || 0), 0);
+    if (UIManager.el.creditosSeleccionados) {
+      UIManager.el.creditosSeleccionados.textContent = creditos;
+    }
+    UIManager.setBotonConfirmar({ habilitado: seleccionadas.length > 0 });
   },
 
   /** Carga y pinta la sugerencia. `conservarAlerta` mantiene el aviso previo. */
@@ -604,7 +650,7 @@ const App = {
     UIManager.renderLimiteCreditos(data.limiteCreditos, data.promedio);
     if (data.notificaciones) UIManager.renderNotificaciones(data.notificaciones);
 
-    UIManager.setBotonConfirmar({ habilitado: this._haySugeridas() });
+    this.actualizarSeleccion();
   },
 
   _suscribirEventos() {
@@ -617,6 +663,14 @@ const App = {
       });
     }
 
+    if (UIManager.el.tablaBody) {
+      UIManager.el.tablaBody.addEventListener('change', evento => {
+        if (evento.target && evento.target.classList.contains('materia-check')) {
+          this.actualizarSeleccion();
+        }
+      });
+    }
+
     if (UIManager.el.btnConfirmar) {
       UIManager.el.btnConfirmar.addEventListener('click', () => this.confirmarMatricula());
     }
@@ -625,7 +679,7 @@ const App = {
   async confirmarMatricula() {
     if (this.enviando) return;
 
-    const sugeridas = this.materiasActuales.filter(m => m.estado === 'Sugerida');
+    const sugeridas = this._seleccionadas();
     if (sugeridas.length === 0) {
       UIManager.mostrarAlerta('warning', 'No hay asignaturas seleccionadas para confirmar.');
       return;
@@ -670,7 +724,7 @@ const App = {
       }
     } finally {
       this.enviando = false;
-      UIManager.setBotonConfirmar({ habilitado: this._haySugeridas(), texto: 'Confirmar Matrícula' });
+      UIManager.setBotonConfirmar({ habilitado: this._haySeleccionadas(), texto: 'Confirmar Matrícula' });
     }
 
     if (recargar) {

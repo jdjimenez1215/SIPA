@@ -207,10 +207,12 @@
                         <table class="table table-striped table-hover" id="tabla-sugerencia" data-bind="sugerencia">
                             <thead class="thead-dark">
                                 <tr>
+                                    <th scope="col" title="Desmarcá las materias que no querés inscribir">Incluir</th>
                                     <th scope="col" data-field="codigo">Código</th>
                                     <th scope="col" data-field="nombre">Asignatura</th>
                                     <th scope="col" data-field="creditos">Créditos</th>
                                     <th scope="col" data-field="semestre">Semestre</th>
+                                    <th scope="col" data-field="cupos">Cupos disponibles</th>
                                     <th scope="col" data-field="estado">Estado (Prerrequisito/Sugerida)</th>
                                 </tr>
                             </thead>
@@ -222,6 +224,7 @@
                     <div class="row align-items-center">
                         <div class="col-md-6">
                             <h4>Total Créditos Sugeridos: <span id="total-creditos" data-field="totalCreditos"></span> / <span id="limite-creditos">18</span></h4>
+                            <p class="mb-1">Créditos seleccionados: <strong><span id="creditos-seleccionados">0</span></strong></p>
                             <small class="text-muted">
                                 Límite: 18 créditos (20 con promedio de 4.0 o más) · Promedio:
                                 <span id="promedio-estudiante">—</span>

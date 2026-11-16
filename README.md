@@ -1,6 +1,6 @@
 # SIPA - Proyecto Parcial
 
-Sistema de **sugerencia e inscripción de materias** para Ingeniería de Sistemas (Unillanos). Tiene un front web, una API de identidad (login JWT) y el microservicio de inscripción, que aplica la regla N+3 (semestre N más hasta 3 materias extra), **prioriza las materias más antiguas**, evita cruces de horario y respeta un **tope de 18 créditos** (20 si el promedio es 4.0 o más).
+Sistema de **sugerencia e inscripción de materias** para Ingeniería de Sistemas (Unillanos). Tiene un front web, una API de identidad (login JWT) y el microservicio de inscripción, que aplica la regla N+3 (semestre N más hasta 3 materias extra), **prioriza las materias más antiguas**, evita cruces de horario, muestra los **cupos disponibles** y respeta un **tope de 18 créditos** (20 si el promedio es 4.0 o más). Cada materia se puede marcar o desmarcar antes de confirmar.
 
 ## Documentación
 
@@ -165,6 +165,8 @@ Tras iniciar sesión, `sugerencia-matricula.html` muestra a Laura con **12 filas
 
 El límite es **18 créditos**, o **20** cuando el promedio histórico es **4.0 o más**. La sugerencia evalúa primero las materias adeudadas más antiguas y descarta las que se cruzan en horario.
 
+Cada fila muestra sus **cupos disponibles / máximos** y una casilla **Incluir** (marcada por defecto; las bloqueadas no se pueden marcar). Al desmarcar una materia bajan los créditos seleccionados y solo se inscriben las que queden marcadas.
+
 ### Verificación
 
 ```bash
@@ -172,7 +174,7 @@ El límite es **18 créditos**, o **20** cuando el promedio histórico es **4.0 
 dotnet test backend/ms-inscripcion/tests/MsInscripcion.UnitTests
 dotnet test backend/mini-identity-api-dotnet/src/MiniIdentityApi.Tests
 
-# E2E del backend (155 checks; requiere el stack arriba y BD limpia)
+# E2E del backend (156 checks; requiere el stack arriba y BD limpia)
 PORT=8080 bash backend/ms-inscripcion/scripts/e2e.sh
 
 # Smoke vía el proxy (solo lectura/rechazo; no escribe en la BD)

@@ -5,7 +5,7 @@ Hay **cinco suites**. Cada una valida una capa distinta, así que conviene conoc
 | Suite | Qué valida | Necesita | Resultado esperado |
 |---|---|---|---|
 | [Tests unitarios](#1-tests-unitarios) | Reglas de negocio y casos de uso, sin base de datos | .NET SDK | **125/125** (ms) + **27/27** (identity) |
-| [E2E del backend](#2-e2e-del-backend-e2esh) | Los 21 endpoints de ms-inscripcion contra la API real | Docker | **155/155** |
+| [E2E del backend](#2-e2e-del-backend-e2esh) | Los 21 endpoints de ms-inscripcion contra la API real | Docker | **156/156** |
 | [Colección Postman](#3-colección-postman--newman) | Lo mismo que el E2E, para correr en Postman o CI | Docker + Postman o Node | **300/300** asserts |
 | [Smoke del proxy](#4-smoke-del-proxy) | Que el front llega a **las dos** APIs a través del proxy | Todo levantado | **5/5** |
 | [Validación del mock](#5-validación-del-mock) | Que el mock del front respeta la regla N+3 | Node | **36/36** |
@@ -56,7 +56,7 @@ cd backend/ms-inscripcion
 PORT=8081 bash scripts/e2e.sh
 ```
 
-Termina con `TOTAL: 155 passed, 0 failed`. Si falla algo, cada línea `FAIL` muestra el endpoint, lo esperado y el cuerpo recibido.
+Termina con `TOTAL: 156 passed, 0 failed`. Si falla algo, cada línea `FAIL` muestra el endpoint, lo esperado y el cuerpo recibido.
 
 ---
 
@@ -132,7 +132,7 @@ Con la base limpia y los tres servicios arriba:
 |---|---|---|
 | 1 | Abrí http://localhost:5500 e ingresá con `admin` / `Admin123*` | Entrás al panel |
 | 2 | Abrí **Sugerencia de matrícula** | Laura, **18 créditos**, 6 materias *Sugerida*; 603701 y 603703 bloqueadas por límite de créditos; 4 bloqueadas por prerrequisito |
-| 3 | Tocá **Confirmar** | Alerta verde "6 asignaturas inscritas (2026-2)". La tabla se recarga sin esas materias y aparece **Materias inscritas** con las 6 y el total de créditos |
+| 3 | Desmarcá una materia y tocá **Confirmar** | Bajan los “Créditos seleccionados” y la alerta verde indica cuántas se inscribieron. La tabla se recarga sin esas materias y aparece **Materias inscritas** con el total de créditos. Cada fila muestra sus **cupos disponibles** |
 | 4 | Resetea la base. Cargá la página **y después** inscribí 603601 por fuera:<br>`curl -X POST http://localhost:8081/api/inscripciones -H 'Content-Type: application/json' -d '{"estudianteId":1,"periodo":"2026-2","codigosMaterias":["603601"]}'`<br>Ahora tocá **Confirmar** | La fila 603601 se marca en rojo con el mensaje de la API (`MATERIA_YA_INSCRITA`) y aparece la alerta "No se inscribió ninguna asignatura". La inscripción es **todo o nada** |
 | 5 | Pará ms-inscripcion (`docker compose stop api`) y recargá | Alerta con el error 502 del proxy |
 | 6 | Poné `useMock: true` en `assets/js/app.js` y recargá | La tabla muestra el mock (también 18 créditos), sin backend |

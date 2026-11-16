@@ -119,6 +119,7 @@ ck "Laura: toda fila trae id"       count_is '"id":' 12
 ck "Laura: encabezado"              grep -q -F '"nombreEstudiante":"Laura Gómez Ríos","programa":"Ingeniería de Sistemas","semestreActual":6,"periodo":"2026-2"' <<<"$LAST"
 ck "Laura: notificaciones vacias"   grep -q -F '"notificaciones":[]' <<<"$LAST"
 ck "Laura: limite 18 y promedio 3.82" grep -q -F '"promedio":3.82,"limiteCreditos":18' <<<"$LAST"
+ck "Laura: cupos disponibles por fila" grep -q -F '"cuposDisponibles":30,"cuposMaximos":30' <<<"$LAST"
 ck "Laura: 603601 Sugerida"         row 603601 Sugerida true null
 ck "Laura: 603606 Sugerida"         row 603606 Sugerida true null
 ck "Laura: 603701 bloqueada por creditos" row 603701 Prerrequisito true '"LIMITE_CREDITOS_EXCEDIDO"'
