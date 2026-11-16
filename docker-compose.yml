@@ -1,0 +1,97 @@
+# SIPA completo: PostgreSQL + ms-inscripcion + identity + front/proxy.
+#
+#   export JWT_KEY="$(openssl rand -base64 48)"
+#   docker compose up -d --build
+#   # http://localhost:5500  (admin / Admin123*)
+#
+# Los puertos se publican solo en 127.0.0.1.
+name: sipa
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: inscripcion
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "127.0.0.1:${DB_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d inscripcion"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  api:
+    build:
+      context: ./backend/ms-inscripcion
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      Swagger__Enabled: "true"
+      ConnectionStrings__Default: "Host=db;Port=5432;Database=inscripcion;Username=postgres;Password=postgres"
+      Enrollment__MaxNextSemesterSubjects: "3"
+      Enrollment__CurrentPeriod: "2026-2"
+      Database__ApplyMigrationsOnStartup: "true"
+      Jwt__Issuer: "MiniIdentityApi"
+      Jwt__Audience: "MiniIdentityApiUsers"
+      Jwt__Key: "${JWT_KEY:?Define JWT_KEY (openssl rand -base64 48) antes de levantar el stack}"
+    ports:
+      - "127.0.0.1:${API_PORT:-8080}:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/8080'"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    restart: unless-stopped
+
+  identity:
+    build:
+      context: ./backend/mini-identity-api-dotnet
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      Jwt__Issuer: "MiniIdentityApi"
+      Jwt__Audience: "MiniIdentityApiUsers"
+      Jwt__Key: "${JWT_KEY:?Define JWT_KEY (openssl rand -base64 48) antes de levantar el stack}"
+    ports:
+      - "127.0.0.1:${IDENTITY_PORT:-5132}:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/8080'"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    restart: unless-stopped
+
+  front:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    depends_on:
+      identity:
+        condition: service_healthy
+      api:
+        condition: service_healthy
+    environment:
+      AUTH_ORIGIN: http://identity:8080
+      ENROLLMENT_ORIGIN: http://api:8080
+      HOST: 0.0.0.0
+      PORT: "5500"
+    ports:
+      - "127.0.0.1:${FRONT_PORT:-5500}:5500"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:5500/index.html', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 5s
+    restart: unless-stopped
+
+volumes:
+  pgdata:

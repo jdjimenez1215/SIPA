@@ -14,7 +14,31 @@ Sistema de **sugerencia e inscripción de materias** para Ingeniería de Sistema
 | [backend/ms-inscripcion/README.md](backend/ms-inscripcion/README.md) | Detalle del microservicio: endpoints, configuración, seed y ejemplos curl |
 | [backend/mini-identity-api-dotnet/README.md](backend/mini-identity-api-dotnet/README.md) | API de identidad |
 
-### Arranque rápido (Git Bash)
+### Arranque rápido con Docker (recomendado)
+
+Levanta las **cuatro piezas** (PostgreSQL, ms-inscripción, identity y front) con un solo comando:
+
+```bash
+# 1. Clave de firma JWT compartida (obligatoria; no está en el repo)
+export JWT_KEY="$(openssl rand -base64 48)"
+
+# 2. Stack completo
+docker compose up -d --build
+
+# 3. Ver que todo quedó sano
+docker compose ps
+```
+
+Abrí **http://localhost:5500** y entrá con `admin` / `Admin123*`.
+
+- Puertos: front `5500`, identity `5132`, API `8080`, PostgreSQL `5432` (todos en `127.0.0.1`).
+- Health checks: `http://localhost:8080/ready`, `http://localhost:5132/health`.
+- Detener: `docker compose down`. Reiniciar datos demo: `docker compose down -v`.
+- Si un puerto está ocupado: `API_PORT=8081`, `DB_PORT=5433`, `IDENTITY_PORT=5133`, `FRONT_PORT=5501`.
+
+> También podés guardar la clave en `SIPA/.env` (`JWT_KEY=...`). Ese archivo está en `.gitignore`.
+
+### Arranque rápido sin Docker (Git Bash)
 
 ```bash
 # 0. Clave de firma JWT compartida (obligatoria; no está en el repo)
@@ -30,8 +54,6 @@ dotnet run --project backend/mini-identity-api-dotnet/src/MiniIdentityApi.Api --
 # 3. Front + proxy (otra terminal)
 ENROLLMENT_ORIGIN=http://localhost:8081 python dev-server.py
 ```
-
-Abrí **http://localhost:5500** y entrá con `admin` / `Admin123*`.
 
 En **PowerShell** generá la clave así (equivale a `openssl rand -base64 48`):
 
@@ -52,8 +74,14 @@ El front (HTML/JS estático) se sirve con `dev-server.py`, que además actúa de
 
 ### Prerrequisitos
 
-- Docker + Docker Compose (ms-inscripcion y su PostgreSQL)
-- .NET SDK (mini-identity-api)
+**Con Docker (recomendado):**
+
+- Docker + Docker Compose v2 (nada más: los Dockerfiles ya incluyen .NET y Python)
+
+**Sin Docker (desarrollo local):**
+
+- Docker + Docker Compose (solo para PostgreSQL + ms-inscripcion)
+- .NET SDK 10 (mini-identity-api)
 - Python 3 (dev-server del front)
 - Node.js (solo para `validar-mocks.mjs`)
 
@@ -121,6 +149,13 @@ Tras iniciar sesión, `sugerencia-matricula.html` muestra a Laura con **12 filas
 ### Verificación
 
 ```bash
+# Tests unitarios (114 ms + 16 identity), sin Docker
+dotnet test backend/ms-inscripcion/tests/MsInscripcion.UnitTests
+dotnet test backend/mini-identity-api-dotnet/src/MiniIdentityApi.Tests
+
+# E2E del backend (147 checks; requiere el stack arriba y BD limpia)
+PORT=8080 bash backend/ms-inscripcion/scripts/e2e.sh
+
 # Smoke vía el proxy (solo lectura/rechazo; no escribe en la BD)
 bash scripts/smoke-proxy.sh              # BASE=http://localhost:5500 por defecto
 

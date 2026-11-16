@@ -1,0 +1,20 @@
+# syntax=docker/dockerfile:1
+# Front estático + proxy mismo-origen (dev-server.py). Sin dependencias externas.
+FROM python:3.13-alpine
+
+WORKDIR /app
+
+COPY dev-server.py ./
+COPY index.html sugerencia-matricula.html ./
+COPY assets ./assets
+
+RUN adduser -D -H -u 10001 sipa && chown -R sipa /app
+USER sipa
+
+ENV HOST=0.0.0.0 \
+    PORT=5500 \
+    AUTH_ORIGIN=http://identity:8080 \
+    ENROLLMENT_ORIGIN=http://api:8080
+
+EXPOSE 5500
+CMD ["python", "dev-server.py"]

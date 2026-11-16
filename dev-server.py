@@ -8,6 +8,8 @@ from urllib.error import HTTPError, URLError
 AUTH_ORIGIN = os.environ.get("AUTH_ORIGIN", "http://localhost:5132").rstrip("/")
 ENROLLMENT_ORIGIN = os.environ.get("ENROLLMENT_ORIGIN", "http://localhost:8080").rstrip("/")
 PORT = int(os.environ.get("PORT", "5500"))
+# "localhost" for local development; "0.0.0.0" inside a container.
+HOST = os.environ.get("HOST", "localhost")
 
 AUTH_SEGMENTS = ("auth", "users", "roles", "demo")
 
@@ -160,8 +162,8 @@ class SipaHandler(SimpleHTTPRequestHandler):
 
 
 if __name__ == "__main__":
-    print(f"SIPA dev server en http://localhost:{PORT}")
+    print(f"SIPA dev server en http://{HOST}:{PORT}")
     print(f"  estáticos: {sorted(PUBLIC_FILES)} + {PUBLIC_DIRS}")
     print(f"  /api/{{{','.join(AUTH_SEGMENTS)}}}/* -> {AUTH_ORIGIN}")
     print(f"  /api/* (resto)          -> {ENROLLMENT_ORIGIN}")
-    ThreadingHTTPServer(("localhost", PORT), SipaHandler).serve_forever()
+    ThreadingHTTPServer((HOST, PORT), SipaHandler).serve_forever()

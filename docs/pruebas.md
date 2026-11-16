@@ -4,8 +4,8 @@ Hay **cinco suites**. Cada una valida una capa distinta, así que conviene conoc
 
 | Suite | Qué valida | Necesita | Resultado esperado |
 |---|---|---|---|
-| [Tests unitarios](#1-tests-unitarios) | Reglas de negocio y casos de uso, sin base de datos | .NET SDK | **114/114** |
-| [E2E del backend](#2-e2e-del-backend-e2esh) | Los 21 endpoints de ms-inscripcion contra la API real | Docker | **145/145** |
+| [Tests unitarios](#1-tests-unitarios) | Reglas de negocio y casos de uso, sin base de datos | .NET SDK | **114/114** (ms) + **16/16** (identity) |
+| [E2E del backend](#2-e2e-del-backend-e2esh) | Los 21 endpoints de ms-inscripcion contra la API real | Docker | **147/147** |
 | [Colección Postman](#3-colección-postman--newman) | Lo mismo que el E2E, para correr en Postman o CI | Docker + Postman o Node | **299/299** asserts |
 | [Smoke del proxy](#4-smoke-del-proxy) | Que el front llega a **las dos** APIs a través del proxy | Todo levantado | **5/5** |
 | [Validación del mock](#5-validación-del-mock) | Que el mock del front respeta la regla N+3 | Node | **36/36** |
@@ -13,6 +13,8 @@ Hay **cinco suites**. Cada una valida una capa distinta, así que conviene conoc
 Y al final, una [prueba manual en el navegador](#6-prueba-manual-en-el-navegador).
 
 > Los comandos están para **Git Bash**. Si en tu máquina el 8080 o el 5432 están ocupados, usá `API_PORT=8081` y `DB_PORT=5433` como en los ejemplos.
+
+> **Verificación completa:** con el stack Docker arriba, `bash scripts/smoke-proxy.sh` y `PORT=8080 bash backend/ms-inscripcion/scripts/e2e.sh` reproducen de punta a punta lo mismo que se validó en local.
 
 ---
 
@@ -54,7 +56,7 @@ cd backend/ms-inscripcion
 PORT=8081 bash scripts/e2e.sh
 ```
 
-Termina con `TOTAL: 145 passed, 0 failed`. Si falla algo, cada línea `FAIL` muestra el endpoint, lo esperado y el cuerpo recibido.
+Termina con `TOTAL: 147 passed, 0 failed`. Si falla algo, cada línea `FAIL` muestra el endpoint, lo esperado y el cuerpo recibido.
 
 ---
 

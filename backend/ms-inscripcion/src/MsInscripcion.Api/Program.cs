@@ -66,6 +66,10 @@ builder.Services.AddProblemDetails(options => options.CustomizeProblemDetails = 
     ctx.ProblemDetails.Instance ??= ctx.HttpContext.Request.Path;
 });
 
+// Health checks: /health is liveness, /ready also pings PostgreSQL.
+builder.Services.AddHealthChecks()
+    .AddDbContextCheck<InscripcionDbContext>("database");
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
@@ -159,6 +163,8 @@ if (app.Configuration.GetValue("Swagger:Enabled", app.Environment.IsDevelopment(
 }
 
 app.MapControllers();
+app.MapHealthChecks("/health");
+app.MapHealthChecks("/ready");
 
 if (app.Configuration.GetValue("Database:ApplyMigrationsOnStartup", true))
 {
