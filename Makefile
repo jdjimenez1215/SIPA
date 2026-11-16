@@ -15,8 +15,9 @@ ROOT_DIR           := $(shell pwd)
 RUN_DIR            := $(ROOT_DIR)/.run
 
 # JWT compartido entre identity y ms-inscripcion: se toma de SIPA/.env si existe.
--include $(ROOT_DIR)/.env
-ifdef JWT_KEY
+# (Se lee con shell y no con `include` porque la ruta puede tener espacios.)
+JWT_KEY ?= $(shell sed -n 's/^JWT_KEY=//p' "$(ROOT_DIR)/.env" 2>/dev/null | head -n1)
+ifneq ($(strip $(JWT_KEY)),)
 export JWT_KEY
 endif
 
@@ -51,6 +52,7 @@ RESET  := \033[0m
 	up-inscripcion down-inscripcion restart-inscripcion logs-inscripcion down-v up-db \
 	up-frontend down-frontend restart-frontend logs-frontend \
 	up-all down-all restart-all \
+	stack-up stack-down demo-reset \
 	test test-identity test-inscripcion test-e2e clean
 
 # Objetivo por defecto
@@ -69,6 +71,9 @@ help:
 	@echo -e "  $(YELLOW)make down$(RESET) / $(YELLOW)make stop$(RESET)        Detiene todos los backends"
 	@echo -e "  $(BLUE)make restart$(RESET)                 Reinicia todos los backends"
 	@echo -e "  $(CYAN)make status$(RESET) / $(CYAN)make ps$(RESET)         Muestra el estado y puertos de los servicios"
+	@echo -e "  $(GREEN)make stack-up$(RESET)               Levanta todo (db+api+identity+front) con el compose raíz"
+	@echo -e "  $(YELLOW)make stack-down$(RESET)             Detiene el stack completo"
+	@echo -e "  $(YELLOW)make demo-reset$(RESET)             Borra la BD y restaura los datos demo"
 	@echo -e ""
 	@echo -e "$(BOLD)BACKEND DE IDENTIDAD (MiniIdentityApi - Puerto $(IDENTITY_PORT)):$(RESET)"
 	@echo -e "  $(GREEN)make up-identity$(RESET)             Levanta MiniIdentity API en segundo plano"
@@ -322,6 +327,20 @@ logs-frontend:
 up-all: up up-frontend
 down-all: down down-frontend
 restart-all: restart restart-frontend
+
+# Stack completo en Docker (docker-compose.yml de la raíz).
+stack-up:
+	@docker compose up -d --build
+	@$(MAKE) --no-print-directory status
+
+stack-down:
+	@docker compose down
+
+# Borra la BD y vuelve a dejar los datos demo (Laura sin inscripciones).
+demo-reset:
+	@docker compose down -v
+	@docker compose up -d
+	@echo -e "$(GREEN)[SIPA] ✔ Datos demo restaurados. Abrí http://localhost:5500$(RESET)"
 
 # ==============================================================================
 # TESTS & LIMPIEZA
