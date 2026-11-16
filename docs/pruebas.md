@@ -4,9 +4,9 @@ Hay **cinco suites**. Cada una valida una capa distinta, así que conviene conoc
 
 | Suite | Qué valida | Necesita | Resultado esperado |
 |---|---|---|---|
-| [Tests unitarios](#1-tests-unitarios) | Reglas de negocio y casos de uso, sin base de datos | .NET SDK | **119/119** (ms) + **27/27** (identity) |
-| [E2E del backend](#2-e2e-del-backend-e2esh) | Los 21 endpoints de ms-inscripcion contra la API real | Docker | **154/154** |
-| [Colección Postman](#3-colección-postman--newman) | Lo mismo que el E2E, para correr en Postman o CI | Docker + Postman o Node | **299/299** asserts |
+| [Tests unitarios](#1-tests-unitarios) | Reglas de negocio y casos de uso, sin base de datos | .NET SDK | **124/124** (ms) + **27/27** (identity) |
+| [E2E del backend](#2-e2e-del-backend-e2esh) | Los 21 endpoints de ms-inscripcion contra la API real | Docker | **155/155** |
+| [Colección Postman](#3-colección-postman--newman) | Lo mismo que el E2E, para correr en Postman o CI | Docker + Postman o Node | **300/300** asserts |
 | [Smoke del proxy](#4-smoke-del-proxy) | Que el front llega a **las dos** APIs a través del proxy | Todo levantado | **5/5** |
 | [Validación del mock](#5-validación-del-mock) | Que el mock del front respeta la regla N+3 | Node | **36/36** |
 
@@ -56,7 +56,7 @@ cd backend/ms-inscripcion
 PORT=8081 bash scripts/e2e.sh
 ```
 
-Termina con `TOTAL: 154 passed, 0 failed`. Si falla algo, cada línea `FAIL` muestra el endpoint, lo esperado y el cuerpo recibido.
+Termina con `TOTAL: 155 passed, 0 failed`. Si falla algo, cada línea `FAIL` muestra el endpoint, lo esperado y el cuerpo recibido.
 
 ---
 
@@ -64,7 +64,7 @@ Termina con `TOTAL: 154 passed, 0 failed`. Si falla algo, cada línea `FAIL` mue
 
 Archivos en `backend/ms-inscripcion/postman/`:
 
-- `MsInscripcion.postman_collection.json`: 98 requests en 11 carpetas
+- `MsInscripcion.postman_collection.json`: 103 requests en 11 carpetas
 - `MsInscripcion.local.postman_environment.json`: variable `host`
 
 **En Postman:**
@@ -81,7 +81,7 @@ npx newman run postman/MsInscripcion.postman_collection.json \
   --env-var host=http://localhost:8081
 ```
 
-Esperado: `assertions 299 | failed 0`.
+Esperado: `assertions 300 | failed 0`.
 
 > El orden importa: los requests crean ids que usan los siguientes, y las pruebas de concurrencia lanzan dos pedidos en paralelo desde el script de tests.
 
@@ -131,21 +131,23 @@ Con la base limpia y los tres servicios arriba:
 | # | Paso | Qué tenés que ver |
 |---|---|---|
 | 1 | Abrí http://localhost:5500 e ingresá con `admin` / `Admin123*` | Entrás al panel |
-| 2 | Abrí **Sugerencia de matrícula** | Laura, **23 créditos**, 8 materias *Sugerida* y 4 bloqueadas con su motivo en español |
-| 3 | Tocá **Confirmar** | Alerta verde "8 asignaturas inscritas (2026-2)". La tabla se recarga sin esas materias |
+| 2 | Abrí **Sugerencia de matrícula** | Laura, **18 créditos**, 6 materias *Sugerida*; 603701 y 603703 bloqueadas por límite de créditos; 4 bloqueadas por prerrequisito |
+| 3 | Tocá **Confirmar** | Alerta verde "6 asignaturas inscritas (2026-2)". La tabla se recarga sin esas materias y aparece **Materias inscritas** con las 6 y el total de créditos |
 | 4 | Resetea la base. Cargá la página **y después** inscribí 603601 por fuera:<br>`curl -X POST http://localhost:8081/api/inscripciones -H 'Content-Type: application/json' -d '{"estudianteId":1,"periodo":"2026-2","codigosMaterias":["603601"]}'`<br>Ahora tocá **Confirmar** | La fila 603601 se marca en rojo con el mensaje de la API (`MATERIA_YA_INSCRITA`) y aparece la alerta "No se inscribió ninguna asignatura". La inscripción es **todo o nada** |
 | 5 | Pará ms-inscripcion (`docker compose stop api`) y recargá | Alerta con el error 502 del proxy |
-| 6 | Poné `useMock: true` en `assets/js/app.js` y recargá | La tabla muestra el mock (también 23 créditos), sin backend |
-| 7 | Abrí http://localhost:5500/index.html en una ventana privada y probá una clave incorrecta | No entra. Identity responde 500 en vez de 401: es una limitación conocida. El enlace "Cerrar Sesión" del menú apunta al sistema de Unillanos, no cierra la sesión local |
+| 6 | Poné `useMock: true` en `assets/js/app.js` y recargá | La tabla muestra el mock (también 18 créditos), sin backend |
+| 7 | Abrí http://localhost:5500/index.html en una ventana privada y probá una clave incorrecta | No entra: identity responde **401** `CREDENCIALES_INVALIDAS`. **Cerrar Sesión** limpia la sesión y vuelve al login del proyecto |
 
 ### Otros estudiantes para probar la regla
 
-Cambiá `estudianteId` en `API_CONFIG` (`assets/js/app.js`):
+El `estudianteId` sale del usuario logueado. Para probar otro estudiante, creá una cuenta como `admin` con `POST /api/auth/register` y el `estudianteId` deseado; luego iniciá sesión con esa cuenta:
 
 | Id | Estudiante | Qué demuestra |
 |---|---|---|
-| 1 | Laura (sem 6) | Prerrequisitos estrictos: 23 créditos |
-| 2 | Mateo (sem 7) | **Tope de 3**: 603804 y 603806 quedan bloqueadas por límite |
-| 3 | Camila (sem 7) | Una materia **adeudada** (603305) ocupa uno de los 3 lugares |
-| 4 | Sofía (sem 8) | Materias con cruce o sin cupo **no gastan lugar** |
+| 1 | Laura (sem 6) | Límite de 18 créditos y prerrequisitos estrictos |
+| 2 | Mateo (sem 7) | Toda su N (17 créditos) entra; las de N+1 quedan por límite de créditos |
+| 3 | Camila (sem 7) | La **adeudada más antigua** (603305, sem 3) se evalúa primero |
+| 4 | Sofía (sem 8) | Cruce de horario y cupo agotado no gastan créditos |
 | 5 | Andrés (sem 9) | Tiene el único cupo de 603903 |
+
+Un promedio **> 4.0** sube el límite a **20 créditos**; el cálculo usa el promedio de las materias aprobadas.

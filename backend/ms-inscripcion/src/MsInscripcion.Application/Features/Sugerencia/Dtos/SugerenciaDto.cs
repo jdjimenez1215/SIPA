@@ -9,7 +9,9 @@ public sealed record SugerenciaDto(
     string Periodo,
     int TotalCreditos,
     IReadOnlyList<MateriaSugeridaDto> MateriasSugeridas,
-    IReadOnlyList<NotificacionDto> Notificaciones);
+    IReadOnlyList<NotificacionDto> Notificaciones,
+    decimal Promedio,
+    int LimiteCreditos);
 
 /// <param name="Estado">Serialized as string (JsonStringEnumConverter).</param>
 /// <param name="Motivo">Rule code that blocks the row; null when <c>Sugerida</c>.</param>

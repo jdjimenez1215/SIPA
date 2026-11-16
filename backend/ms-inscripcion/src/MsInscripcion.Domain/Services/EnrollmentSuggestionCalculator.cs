@@ -15,6 +15,7 @@ public sealed class EnrollmentSuggestionCalculator(EnrollmentRulesEngine engine)
         ErrorCodes.PrerequisiteNotMet,
         ErrorCodes.SeatsExhausted,
         ErrorCodes.ScheduleOverlap,
+        ErrorCodes.CreditLimitExceeded,
         ErrorCodes.ExtraSubjectsCapExceeded
     ];
 
@@ -25,12 +26,14 @@ public sealed class EnrollmentSuggestionCalculator(EnrollmentRulesEngine engine)
         var n = baseCtx.Student.SemestreActual;
         var activeIds = baseCtx.ActiveEnrolledMaterias.Select(m => m.Id).ToHashSet();
 
+        // Oldest pending subjects first (owed semesters, then current N, then N+1).
+        // This is what "adelantar materias" means: clear the backlog before adding new ones.
         var evalOrder = careerMaterias
             .Where(m => m.CarreraId == baseCtx.Student.CarreraId
                         && m.Semestre <= n + 1
                         && !baseCtx.ApprovedMateriaIds.Contains(m.Id)
                         && !activeIds.Contains(m.Id))
-            .OrderBy(m => m.Semestre == n ? 0 : m.Semestre < n ? 1 : 2)
+            .OrderBy(m => m.Semestre)
             .ThenBy(m => m.Codigo, StringComparer.Ordinal)
             .ToList();
 

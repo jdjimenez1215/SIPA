@@ -2,7 +2,7 @@
   "nombreEstudiante": "Laura Gómez Ríos",
   "programa": "Ingeniería de Sistemas",
   "semestreActual": 6,
-  "totalCreditos": 23,
+  "totalCreditos": 18,
   "materiasSugeridas": [
     {
       "codigo": "603601",
@@ -57,8 +57,9 @@
       "nombre": "Metodología de Investigación",
       "creditos": 3,
       "semestre": 7,
-      "estado": "Sugerida",
-      "prerrequisitoCumplido": true
+      "estado": "Prerrequisito",
+      "prerrequisitoCumplido": true,
+      "motivo": "LIMITE_CREDITOS_EXCEDIDO"
     },
     {
       "codigo": "603702",
@@ -73,8 +74,9 @@
       "nombre": "Ética y Humanística",
       "creditos": 2,
       "semestre": 7,
-      "estado": "Sugerida",
-      "prerrequisitoCumplido": true
+      "estado": "Prerrequisito",
+      "prerrequisitoCumplido": true,
+      "motivo": "LIMITE_CREDITOS_EXCEDIDO"
     },
     {
       "codigo": "603704",

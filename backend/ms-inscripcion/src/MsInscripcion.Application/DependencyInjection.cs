@@ -29,6 +29,7 @@ public static class DependencyInjection
         services.AddSingleton<IEnrollmentRule, ScheduleOverlapRule>();
         services.AddSingleton<IEnrollmentRule, SemesterWindowRule>();
         services.AddSingleton<IEnrollmentRule, ExtraSubjectsCapRule>();
+        services.AddSingleton<IEnrollmentRule, CreditLimitRule>();
         services.AddSingleton<IEnrollmentRule, NoDuplicateRule>();
         services.AddSingleton<IEnrollmentRule, SeatAvailabilityRule>();
         services.AddSingleton<EnrollmentRulesEngine>();

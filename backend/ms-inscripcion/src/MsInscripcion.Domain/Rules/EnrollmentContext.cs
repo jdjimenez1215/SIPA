@@ -9,8 +9,12 @@ public sealed record EnrollmentContext(
     IReadOnlySet<int> ApprovedMateriaIds,
     IReadOnlyList<Materia> ActiveEnrolledMaterias,      // same period, with Horarios
     IReadOnlyDictionary<int, int> ActiveSeatCounts,      // materiaId -> active count for the period
-    IReadOnlyList<Materia> Candidates)                   // request order, with Horarios + Prerrequisitos
+    IReadOnlyList<Materia> Candidates,                   // request order, with Horarios + Prerrequisitos
+    decimal StudentAverage = 0m)                         // historical average (0 when unknown)
 {
+    /// <summary>18 credits normally; 20 when the student's average is above 4.0.</summary>
+    public int MaxCredits => CreditPolicy.LimitFor(StudentAverage);
+
     /// <summary>Candidates that appear earlier in the request than the given materia.</summary>
     public IEnumerable<Materia> CandidatesBefore(Materia m) => Candidates.TakeWhile(c => c.Id != m.Id);
 

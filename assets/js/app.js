@@ -53,7 +53,7 @@ const MOCK_SUGERENCIA = {
   nombreEstudiante: 'Laura Gómez Ríos',
   programa: 'Ingeniería de Sistemas',
   semestreActual: 6,
-  totalCreditos: 23,
+  totalCreditos: 18,
   materiasSugeridas: [
     // Semestre N (6) — sugeridas
     { codigo: '603601', nombre: 'Ingeniería de Software II',                creditos: 3, semestre: 6, estado: 'Sugerida',     prerrequisitoCumplido: true },
@@ -63,9 +63,9 @@ const MOCK_SUGERENCIA = {
     { codigo: '603605', nombre: 'Redes de Computadores',                    creditos: 4, semestre: 6, estado: 'Sugerida',     prerrequisitoCumplido: true },
     { codigo: '603606', nombre: 'Administración Financiera para Ingeniería', creditos: 2, semestre: 6, estado: 'Sugerida',     prerrequisitoCumplido: true },
     // Semestre N+1: solo entran las que tienen prerrequisito aprobado
-    { codigo: '603701', nombre: 'Metodología de Investigación',             creditos: 3, semestre: 7, estado: 'Sugerida',     prerrequisitoCumplido: true },
+    { codigo: '603701', nombre: 'Metodología de Investigación',             creditos: 3, semestre: 7, estado: 'Prerrequisito', prerrequisitoCumplido: true, motivo: 'LIMITE_CREDITOS_EXCEDIDO' },
     { codigo: '603702', nombre: 'Tecnologías Avanzadas',                    creditos: 3, semestre: 7, estado: 'Prerrequisito', prerrequisitoCumplido: false },
-    { codigo: '603703', nombre: 'Ética y Humanística',                      creditos: 2, semestre: 7, estado: 'Sugerida',     prerrequisitoCumplido: true },
+    { codigo: '603703', nombre: 'Ética y Humanística',                      creditos: 2, semestre: 7, estado: 'Prerrequisito', prerrequisitoCumplido: true, motivo: 'LIMITE_CREDITOS_EXCEDIDO' },
     // Filas bloqueadas por prerrequisito no aprobado: no suman al totalCreditos
     { codigo: '603704', nombre: 'Sistemas Distribuidos',                   creditos: 3, semestre: 7, estado: 'Prerrequisito', prerrequisitoCumplido: false },
     { codigo: '603705', nombre: 'Seguridad de la Información',              creditos: 3, semestre: 7, estado: 'Prerrequisito', prerrequisitoCumplido: false },
@@ -83,6 +83,7 @@ const MOCK_SUGERENCIA = {
 const MOTIVO_LABELS = {
   PREREQUISITO_NO_CUMPLIDO: 'Prerrequisito no aprobado',
   LIMITE_SIGUIENTE_SEMESTRE_EXCEDIDO: 'Cupo de 3 asignaturas extra alcanzado',
+  LIMITE_CREDITOS_EXCEDIDO: 'Límite de créditos alcanzado',
   CUPO_AGOTADO: 'Sin cupos disponibles',
   CRUCE_HORARIO: 'Cruce de horario',
   SEMESTRE_EXCEDIDO: 'Fuera de la ventana de semestres',
@@ -209,6 +210,8 @@ const UIManager = {
       totalInscritos:      document.getElementById('total-creditos-inscritos'),
       periodoInscritas:    document.getElementById('periodo-inscritas'),
       totalCreditos:       document.getElementById('total-creditos'),
+      limiteCreditos:      document.getElementById('limite-creditos'),
+      promedioEstudiante:  document.getElementById('promedio-estudiante'),
       btnConfirmar:        document.getElementById('btn-confirmar'),
       alertContainer:      document.getElementById('alert-container'),
       navFechaHoraTxt:     document.getElementById('navFechaHoraTxt'),
@@ -385,6 +388,18 @@ const UIManager = {
       this.el.totalCreditos.setAttribute('data-total', total);
     }
     return total;
+  },
+
+  /** Límite de créditos del período y promedio del estudiante. */
+  renderLimiteCreditos(limite, promedio) {
+    if (this.el.limiteCreditos) {
+      this.el.limiteCreditos.textContent = limite != null ? limite : 18;
+    }
+    if (this.el.promedioEstudiante) {
+      this.el.promedioEstudiante.textContent = promedio != null
+        ? Number(promedio).toFixed(2)
+        : '—';
+    }
   },
 
   /* ---------- Tabla de materias inscritas ---------- */
@@ -586,6 +601,7 @@ const App = {
     UIManager.renderPerfil(data);                    // #user-nombre / #user-programa
     UIManager.renderMaterias(this.materiasActuales); // #tabla-materias-body
     UIManager.renderTotalCreditos(data.totalCreditos, this.materiasActuales); // #total-creditos
+    UIManager.renderLimiteCreditos(data.limiteCreditos, data.promedio);
     if (data.notificaciones) UIManager.renderNotificaciones(data.notificaciones);
 
     UIManager.setBotonConfirmar({ habilitado: this._haySugeridas() });

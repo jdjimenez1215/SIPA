@@ -49,6 +49,7 @@ public class EnrollCommandHandlerTests
             new ScheduleOverlapRule(),
             new SemesterWindowRule(),
             new ExtraSubjectsCapRule(),
+            new CreditLimitRule(),
             new NoDuplicateRule(),
             new SeatAvailabilityRule()
         });

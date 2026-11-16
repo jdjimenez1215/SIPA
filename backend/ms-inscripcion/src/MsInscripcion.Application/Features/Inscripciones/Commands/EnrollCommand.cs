@@ -113,6 +113,7 @@ public sealed class EnrollCommandHandler(
         var candidates = requestedIds.Select(id => byId[id]).ToList(); // request order
 
         var approved = await students.GetApprovedMateriaIdsAsync(student.Id, ct);
+        var average = await students.GetAverageGradeAsync(student.Id, ct);
         var activeEnrollments = await inscripciones.GetActiveWithScheduleAsync(student.Id, request.Periodo, ct);
         var seatCounts = await inscripciones.CountActiveAsync(lockIds, request.Periodo, ct);
 
@@ -123,7 +124,8 @@ public sealed class EnrollCommandHandler(
             approved,
             activeEnrollments.Where(i => i.Materia is not null).Select(i => i.Materia!).ToList(),
             seatCounts,
-            candidates);
+            candidates,
+            average);
 
         var violations = engine.Evaluate(context);
         if (violations.Count > 0)

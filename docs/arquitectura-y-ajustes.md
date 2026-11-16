@@ -65,26 +65,26 @@ sequenceDiagram
 
 Un estudiante en el semestre **N** puede inscribir:
 
-1. **Todo el semestre N.**
-2. **Hasta 3 materias "extra"**, compartidas entre:
-   - materias **adeudadas** de semestres anteriores (tienen **prioridad**, pero **no son obligatorias**), y
-   - materias del semestre **N+1**.
-3. Nada por encima de N+1 (`SEMESTRE_EXCEDIDO`).
+1. **Materias más antiguas primero**: adeudadas de semestres anteriores, luego N, luego N+1.
+2. **Todo el semestre N** que quepa en el tope de créditos.
+3. **Hasta 3 materias "extra"**, compartidas entre adeudadas y N+1.
+4. Nada por encima de N+1 (`SEMESTRE_EXCEDIDO`).
+5. **Tope de créditos**: 18 por período, o **20 si el promedio histórico es mayor a 4.0** (`LIMITE_CREDITOS_EXCEDIDO`).
 
 Además:
 
 - **Prerrequisitos estrictos:** solo cuenta una materia **aprobada**. No vale "la estoy cursando ahora".
-- Siguen aplicando: misma carrera, cruce de horarios, cupos y no repetir materias aprobadas o ya inscritas.
-- En la **sugerencia**, una materia que no se puede tomar (sin cupo, cruce) **no gasta** uno de los 3 lugares: se muestra bloqueada con su motivo y el lugar pasa a la siguiente.
+- Siguen aplicando: misma carrera, **cruce de horarios**, cupos y no repetir aprobadas/inscritas.
+- En la **sugerencia**, una materia bloqueada (sin cupo, cruce, créditos o prerrequisito) se muestra con su motivo y no consume créditos; el algoritmo sigue con la siguiente.
 
-**Ejemplo — Laura (semestre 6, todo aprobado hasta el 5):**
+**Ejemplo — Laura (semestre 6, promedio 3.82, todo aprobado hasta el 5):**
 
 | Semestre | Materias | Resultado |
 |---|---|---|
 | 6 | 603601 … 603606 | las 6 **Sugeridas** (18 créditos) |
-| 7 | 603701, 603703 | **Sugeridas** (5 créditos) |
-| 7 | 603702, 603704, 603705, 603706 | **Bloqueadas**: su prerrequisito es del semestre 6 y todavía no está aprobado |
-| **Total** | | **23 créditos** |
+| 7 | 603701, 603703 | **Bloqueadas por `LIMITE_CREDITOS_EXCEDIDO`** (ya no caben) |
+| 7 | 603702, 603704, 603705, 603706 | **Bloqueadas** por prerrequisito no aprobado |
+| **Total** | | **18 créditos** |
 
 ---
 
@@ -100,6 +100,7 @@ Además:
 | Ajuste | Antes | Ahora |
 |---|---|---|
 | Regla de semestres | Hasta el semestre N+3, sin tope | Semestre N + máx. 3 extras (adeudadas + N+1) |
+| Tope de créditos | Sin tope | 18 créditos (20 si promedio > 4.0), priorizando adeudadas |
 | Configuración | `Enrollment:MaxSemestersAhead` | `Enrollment:MaxNextSemesterSubjects` (= 3) |
 | Endpoint nuevo | — | `GET /api/estudiantes/{id}/sugerencia` con la forma que espera el front + `id` y `motivo` por fila |
 | Inscribir | solo `materiaIds` | `materiaIds` **o** `codigosMaterias` (ej. `"603601"`) |
@@ -116,7 +117,8 @@ Además:
 | Backend caído | El proxy responde **502** claro: *"No se pudo conectar con el servicio en …"* |
 | Datos reales | `useMock: false`: la tabla se llena desde la API. El mock queda como modo *offline* |
 | Errores visibles | Un 422 marca **cada fila** con su error; los demás errores muestran el `detail` de la API |
-| Mock corregido | `sugerencia_mock.json` pasó de 26 a **23 créditos** (prerrequisitos estrictos) |
+| Mock corregido | `sugerencia_mock.json` refleja el tope de **18 créditos** y el bloqueo por `LIMITE_CREDITOS_EXCEDIDO` |
+| Materias inscritas | Tabla debajo de la sugerencia con lo ya inscrito en el período y su total de créditos |
 
 ### Bugs corregidos
 

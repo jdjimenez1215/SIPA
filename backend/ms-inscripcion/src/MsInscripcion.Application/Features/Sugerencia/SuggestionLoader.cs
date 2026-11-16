@@ -22,6 +22,7 @@ internal static class SuggestionLoader
         CancellationToken ct)
     {
         var approved = await students.GetApprovedMateriaIdsAsync(student.Id, ct);
+        var average = await students.GetAverageGradeAsync(student.Id, ct);
         var careerMaterias = await materias.GetByCarreraAsync(student.CarreraId, ct);
         if (careerMaterias.Count == 0)
             return [];
@@ -36,7 +37,8 @@ internal static class SuggestionLoader
             approved,
             activeEnrollments.Where(i => i.Materia is not null).Select(i => i.Materia!).ToList(),
             seatCounts,
-            []);
+            [],
+            average);
 
         return calculator.Suggest(baseContext, careerMaterias);
     }

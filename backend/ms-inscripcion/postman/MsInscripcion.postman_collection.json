@@ -420,7 +420,7 @@
                   "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
                   "pm.test(\"contiene \\\"codigo\\\":\\\"603601\\\"\", () => pm.expect(pm.response.text()).to.include(\"\\\"codigo\\\":\\\"603601\\\"\"));",
                   "pm.test(\"no contiene \\\"codigo\\\":\\\"603702\\\"\", () => pm.expect(pm.response.text()).to.not.include(\"\\\"codigo\\\":\\\"603702\\\"\"));",
-                  "pm.test(\"8 materias\", () => pm.expect(pm.response.json()).to.have.lengthOf(8));"
+                  "pm.test(\"6 materias\", () => pm.expect(pm.response.json()).to.have.lengthOf(6));"
                 ]
               }
             }
@@ -441,7 +441,7 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
-                  "pm.test(\"contiene \\\"codigo\\\":\\\"603703\\\"\", () => pm.expect(pm.response.text()).to.include(\"\\\"codigo\\\":\\\"603703\\\"\"));",
+                  "pm.test(\"contiene \\\"codigo\\\":\\\"603606\\\"\", () => pm.expect(pm.response.text()).to.include(\"\\\"codigo\\\":\\\"603606\\\"\"));",
                   "pm.test(\"no contiene \\\"codigo\\\":\\\"603101\\\"\", () => pm.expect(pm.response.text()).to.not.include(\"\\\"codigo\\\":\\\"603101\\\"\"));"
                 ]
               }
@@ -480,7 +480,7 @@
       "name": "03 Sugerencia",
       "item": [
         {
-          "name": "Sugerencia de Laura (23 créditos)",
+          "name": "Sugerencia de Laura (18 créditos)",
           "event": [
             {
               "listen": "test",
@@ -488,17 +488,18 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
-                  "pm.test(\"contiene \\\"totalCreditos\\\":23\", () => pm.expect(pm.response.text()).to.include(\"\\\"totalCreditos\\\":23\"));",
+                  "pm.test(\"contiene \\\"totalCreditos\\\":18\", () => pm.expect(pm.response.text()).to.include(\"\\\"totalCreditos\\\":18\"));",
                   "pm.test(\"contiene \\\"notificaciones\\\":[]\", () => pm.expect(pm.response.text()).to.include(\"\\\"notificaciones\\\":[]\"));",
                   "const body = pm.response.json();",
                   "const by = Object.fromEntries(body.materiasSugeridas.map(r => [r.codigo, r]));",
                   "pm.test(\"12 filas\", () => pm.expect(body.materiasSugeridas).to.have.lengthOf(12));",
                   "pm.test(\"toda fila trae id\", () => pm.expect(body.materiasSugeridas.every(r => Number.isInteger(r.id))).to.be.true);",
-                  "pm.test(\"totalCreditos 23\", () => pm.expect(body.totalCreditos).to.eql(23));",
+                  "pm.test(\"totalCreditos 18\", () => pm.expect(body.totalCreditos).to.eql(18));",
+                  "pm.test(\"limite 18 y promedio 3.82\", () => pm.expect(body).to.include({ limiteCreditos: 18, promedio: 3.82 }));",
                   "pm.test(\"603601 Sugerida (prereq true, motivo None)\", () => pm.expect(by[\"603601\"]).to.include({ estado: \"Sugerida\", prerrequisitoCumplido: true, motivo: null }));",
                   "pm.test(\"603606 Sugerida (prereq true, motivo None)\", () => pm.expect(by[\"603606\"]).to.include({ estado: \"Sugerida\", prerrequisitoCumplido: true, motivo: null }));",
-                  "pm.test(\"603701 Sugerida (prereq true, motivo None)\", () => pm.expect(by[\"603701\"]).to.include({ estado: \"Sugerida\", prerrequisitoCumplido: true, motivo: null }));",
-                  "pm.test(\"603703 Sugerida (prereq true, motivo None)\", () => pm.expect(by[\"603703\"]).to.include({ estado: \"Sugerida\", prerrequisitoCumplido: true, motivo: null }));",
+                  "pm.test(\"603701 bloqueada por creditos\", () => pm.expect(by[\"603701\"]).to.include({ estado: \"Prerrequisito\", prerrequisitoCumplido: true, motivo: \"LIMITE_CREDITOS_EXCEDIDO\" }));",
+                  "pm.test(\"603703 bloqueada por creditos\", () => pm.expect(by[\"603703\"]).to.include({ estado: \"Prerrequisito\", prerrequisitoCumplido: true, motivo: \"LIMITE_CREDITOS_EXCEDIDO\" }));",
                   "pm.test(\"603702 Prerrequisito (prereq false, motivo PREREQUISITO_NO_CUMPLIDO)\", () => pm.expect(by[\"603702\"]).to.include({ estado: \"Prerrequisito\", prerrequisitoCumplido: false, motivo: \"PREREQUISITO_NO_CUMPLIDO\" }));",
                   "pm.test(\"603704 Prerrequisito (prereq false, motivo PREREQUISITO_NO_CUMPLIDO)\", () => pm.expect(by[\"603704\"]).to.include({ estado: \"Prerrequisito\", prerrequisitoCumplido: false, motivo: \"PREREQUISITO_NO_CUMPLIDO\" }));",
                   "pm.test(\"603705 Prerrequisito (prereq false, motivo PREREQUISITO_NO_CUMPLIDO)\", () => pm.expect(by[\"603705\"]).to.include({ estado: \"Prerrequisito\", prerrequisitoCumplido: false, motivo: \"PREREQUISITO_NO_CUMPLIDO\" }));",
@@ -586,11 +587,11 @@
                   "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
                   "const body = pm.response.json();",
                   "const by = Object.fromEntries(body.materiasSugeridas.map(r => [r.codigo, r]));",
-                  "pm.test(\"603801 Sugerida (prereq true, motivo None)\", () => pm.expect(by[\"603801\"]).to.include({ estado: \"Sugerida\", prerrequisitoCumplido: true, motivo: null }));",
-                  "pm.test(\"603802 Sugerida (prereq true, motivo None)\", () => pm.expect(by[\"603802\"]).to.include({ estado: \"Sugerida\", prerrequisitoCumplido: true, motivo: null }));",
-                  "pm.test(\"603803 Sugerida (prereq true, motivo None)\", () => pm.expect(by[\"603803\"]).to.include({ estado: \"Sugerida\", prerrequisitoCumplido: true, motivo: null }));",
-                  "pm.test(\"603804 Prerrequisito (prereq true, motivo LIMITE_SIGUIENTE_SEMESTRE_EXCEDIDO)\", () => pm.expect(by[\"603804\"]).to.include({ estado: \"Prerrequisito\", prerrequisitoCumplido: true, motivo: \"LIMITE_SIGUIENTE_SEMESTRE_EXCEDIDO\" }));",
-                  "pm.test(\"603806 Prerrequisito (prereq true, motivo LIMITE_SIGUIENTE_SEMESTRE_EXCEDIDO)\", () => pm.expect(by[\"603806\"]).to.include({ estado: \"Prerrequisito\", prerrequisitoCumplido: true, motivo: \"LIMITE_SIGUIENTE_SEMESTRE_EXCEDIDO\" }));",
+                  "pm.test(\"603801 bloqueada por creditos\", () => pm.expect(by[\"603801\"]).to.include({ estado: \"Prerrequisito\", prerrequisitoCumplido: true, motivo: \"LIMITE_CREDITOS_EXCEDIDO\" }));",
+                  "pm.test(\"603802 bloqueada por creditos\", () => pm.expect(by[\"603802\"]).to.include({ estado: \"Prerrequisito\", prerrequisitoCumplido: true, motivo: \"LIMITE_CREDITOS_EXCEDIDO\" }));",
+                  "pm.test(\"603803 bloqueada por creditos\", () => pm.expect(by[\"603803\"]).to.include({ estado: \"Prerrequisito\", prerrequisitoCumplido: true, motivo: \"LIMITE_CREDITOS_EXCEDIDO\" }));",
+                  "pm.test(\"603804 bloqueada por creditos\", () => pm.expect(by[\"603804\"]).to.include({ estado: \"Prerrequisito\", prerrequisitoCumplido: true, motivo: \"LIMITE_CREDITOS_EXCEDIDO\" }));",
+                  "pm.test(\"603806 bloqueada por creditos\", () => pm.expect(by[\"603806\"]).to.include({ estado: \"Prerrequisito\", prerrequisitoCumplido: true, motivo: \"LIMITE_CREDITOS_EXCEDIDO\" }));",
                   "pm.test(\"603805 Prerrequisito (prereq false, motivo PREREQUISITO_NO_CUMPLIDO)\", () => pm.expect(by[\"603805\"]).to.include({ estado: \"Prerrequisito\", prerrequisitoCumplido: false, motivo: \"PREREQUISITO_NO_CUMPLIDO\" }));",
                   "pm.test(\"603706 Sugerida (prereq true, motivo None)\", () => pm.expect(by[\"603706\"]).to.include({ estado: \"Sugerida\", prerrequisitoCumplido: true, motivo: null }));"
                 ]
@@ -615,11 +616,11 @@
                   "const body = pm.response.json();",
                   "const by = Object.fromEntries(body.materiasSugeridas.map(r => [r.codigo, r]));",
                   "pm.test(\"603305 Sugerida (prereq true, motivo None)\", () => pm.expect(by[\"603305\"]).to.include({ estado: \"Sugerida\", prerrequisitoCumplido: true, motivo: null }));",
-                  "pm.test(\"603801 Sugerida (prereq true, motivo None)\", () => pm.expect(by[\"603801\"]).to.include({ estado: \"Sugerida\", prerrequisitoCumplido: true, motivo: null }));",
-                  "pm.test(\"603802 Sugerida (prereq true, motivo None)\", () => pm.expect(by[\"603802\"]).to.include({ estado: \"Sugerida\", prerrequisitoCumplido: true, motivo: null }));",
-                  "pm.test(\"603803 Prerrequisito (prereq true, motivo LIMITE_SIGUIENTE_SEMESTRE_EXCEDIDO)\", () => pm.expect(by[\"603803\"]).to.include({ estado: \"Prerrequisito\", prerrequisitoCumplido: true, motivo: \"LIMITE_SIGUIENTE_SEMESTRE_EXCEDIDO\" }));",
-                  "pm.test(\"603804 Prerrequisito (prereq true, motivo LIMITE_SIGUIENTE_SEMESTRE_EXCEDIDO)\", () => pm.expect(by[\"603804\"]).to.include({ estado: \"Prerrequisito\", prerrequisitoCumplido: true, motivo: \"LIMITE_SIGUIENTE_SEMESTRE_EXCEDIDO\" }));",
-                  "pm.test(\"603806 Prerrequisito (prereq true, motivo LIMITE_SIGUIENTE_SEMESTRE_EXCEDIDO)\", () => pm.expect(by[\"603806\"]).to.include({ estado: \"Prerrequisito\", prerrequisitoCumplido: true, motivo: \"LIMITE_SIGUIENTE_SEMESTRE_EXCEDIDO\" }));",
+                  "pm.test(\"603801 bloqueada por creditos\", () => pm.expect(by[\"603801\"]).to.include({ estado: \"Prerrequisito\", prerrequisitoCumplido: true, motivo: \"LIMITE_CREDITOS_EXCEDIDO\" }));",
+                  "pm.test(\"603802 bloqueada por creditos\", () => pm.expect(by[\"603802\"]).to.include({ estado: \"Prerrequisito\", prerrequisitoCumplido: true, motivo: \"LIMITE_CREDITOS_EXCEDIDO\" }));",
+                  "pm.test(\"603803 bloqueada por creditos\", () => pm.expect(by[\"603803\"]).to.include({ estado: \"Prerrequisito\", prerrequisitoCumplido: true, motivo: \"LIMITE_CREDITOS_EXCEDIDO\" }));",
+                  "pm.test(\"603804 bloqueada por creditos\", () => pm.expect(by[\"603804\"]).to.include({ estado: \"Prerrequisito\", prerrequisitoCumplido: true, motivo: \"LIMITE_CREDITOS_EXCEDIDO\" }));",
+                  "pm.test(\"603806 Sugerida\", () => pm.expect(by[\"603806\"]).to.include({ estado: \"Sugerida\", prerrequisitoCumplido: true, motivo: null }));",
                   "pm.test(\"603805 Prerrequisito (prereq false, motivo PREREQUISITO_NO_CUMPLIDO)\", () => pm.expect(by[\"603805\"]).to.include({ estado: \"Prerrequisito\", prerrequisitoCumplido: false, motivo: \"PREREQUISITO_NO_CUMPLIDO\" }));"
                 ]
               }
@@ -646,8 +647,8 @@
                   "pm.test(\"603901 Prerrequisito (prereq false, motivo PREREQUISITO_NO_CUMPLIDO)\", () => pm.expect(by[\"603901\"]).to.include({ estado: \"Prerrequisito\", prerrequisitoCumplido: false, motivo: \"PREREQUISITO_NO_CUMPLIDO\" }));",
                   "pm.test(\"603902 Prerrequisito (prereq true, motivo CRUCE_HORARIO)\", () => pm.expect(by[\"603902\"]).to.include({ estado: \"Prerrequisito\", prerrequisitoCumplido: true, motivo: \"CRUCE_HORARIO\" }));",
                   "pm.test(\"603903 Prerrequisito (prereq true, motivo CUPO_AGOTADO)\", () => pm.expect(by[\"603903\"]).to.include({ estado: \"Prerrequisito\", prerrequisitoCumplido: true, motivo: \"CUPO_AGOTADO\" }));",
-                  "pm.test(\"603904 Sugerida (prereq true, motivo None)\", () => pm.expect(by[\"603904\"]).to.include({ estado: \"Sugerida\", prerrequisitoCumplido: true, motivo: null }));",
-                  "pm.test(\"603905 Sugerida (prereq true, motivo None)\", () => pm.expect(by[\"603905\"]).to.include({ estado: \"Sugerida\", prerrequisitoCumplido: true, motivo: null }));"
+                  "pm.test(\"603904 bloqueada por creditos\", () => pm.expect(by[\"603904\"]).to.include({ estado: \"Prerrequisito\", prerrequisitoCumplido: true, motivo: \"LIMITE_CREDITOS_EXCEDIDO\" }));",
+                  "pm.test(\"603905 bloqueada por creditos\", () => pm.expect(by[\"603905\"]).to.include({ estado: \"Prerrequisito\", prerrequisitoCumplido: true, motivo: \"LIMITE_CREDITOS_EXCEDIDO\" }));"
                 ]
               }
             }
@@ -2094,7 +2095,7 @@
       "name": "09 Inscripciones - camino feliz y cancelación",
       "item": [
         {
-          "name": "Laura inscribe sus 8 Sugerida → 201",
+          "name": "Laura inscribe sus 6 Sugerida (18 créditos) → 201",
           "event": [
             {
               "listen": "test",
@@ -2103,7 +2104,7 @@
                 "exec": [
                   "pm.test(\"HTTP 201\", () => pm.response.to.have.status(201));",
                   "pm.collectionVariables.set(\"lauraInscId\", pm.response.json()[0].id);",
-                  "pm.test(\"crea 8 inscripciones\", () => pm.expect(pm.response.json()).to.have.lengthOf(8));"
+                  "pm.test(\"crea 6 inscripciones\", () => pm.expect(pm.response.json()).to.have.lengthOf(6));"
                 ]
               }
             }
@@ -2119,7 +2120,7 @@
             "url": "{{baseUrl}}/inscripciones",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"estudianteId\": 1,\n  \"periodo\": \"2026-2\",\n  \"codigosMaterias\": [\"603601\", \"603602\", \"603603\", \"603604\", \"603605\", \"603606\", \"603701\", \"603703\"]\n}"
+              "raw": "{\n  \"estudianteId\": 1,\n  \"periodo\": \"2026-2\",\n  \"codigosMaterias\": [\"603601\", \"603602\", \"603603\", \"603604\", \"603605\", \"603606\"]\n}"
             }
           }
         },

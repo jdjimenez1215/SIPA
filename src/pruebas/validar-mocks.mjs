@@ -211,41 +211,39 @@ revisar(
  * ============================================================ */
 grupo('4. La sugerencia es la que produce la regla N+3');
 
-/* Reimplementacion de ReglaN3.Calcular con la regla acordada:
- *  - Se sugiere TODO el semestre N.
- *  - Cupo extra de 3 filas, COMPARTIDO entre adeudadas (semestres < N sin
- *    aprobar, incluida Reprobada) y semestre N+1. Las adeudadas van primero
- *    (prioridad, no obligatorias); dentro de cada grupo, orden de codigo.
- *  - Prerrequisitos ESTRICTOS: solo cuentan las asignaturas APROBADAS del
- *    historial. Lo que se sugiere en este mismo periodo NO los satisface.
- *  - Si N es el ultimo semestre no hay filas N+1.
+/* Reimplementacion de la sugerencia con la regla acordada:
+ *  - Materias mas antiguas primero (adeudadas, luego N, luego N+1).
+ *  - Maximo 18 creditos en el periodo (20 si el promedio supera 4.0; el mock
+ *    de Laura usa 18 porque su promedio es 3.82).
+ *  - Cupo extra de 3 filas, COMPARTIDO entre adeudadas y N+1.
+ *  - Prerrequisitos ESTRICTOS: solo cuentan las asignaturas APROBADAS.
  * Se repite aqui a proposito: si el fixture dejara de ser lo que la regla
  * produce, el contrato se rompio y el error se ve sin levantar el backend. */
 function reglaN3(catalogo, semestreActual, codigosAprobados) {
   const ultimo = Math.max(...catalogo.map((x) => x.semestre));
-  const porCodigoAsc = (x, y) => x.codigo.localeCompare(y.codigo);
   const cumplePrereq = (a) => a.prerrequisitos.every((p) => codigosAprobados.has(p));
   const fila = (a, estado, cumple) => ({ codigo: a.codigo, semestre: a.semestre, creditos: a.creditos, estado, cumple });
 
+  const MAX_CREDITOS = 18;
+  const candidatas = catalogo
+    .filter((x) => x.semestre <= semestreActual + 1 && !codigosAprobados.has(x.codigo))
+    .sort((x, y) => x.semestre - y.semestre || x.codigo.localeCompare(y.codigo));
+
+  let cupoExtra = CUPO_EXTRA;
+  let creditos = 0;
   const salida = [];
 
-  for (const a of catalogo.filter((x) => x.semestre === semestreActual).sort(porCodigoAsc)) {
-    if (codigosAprobados.has(a.codigo)) continue;
+  for (const a of candidatas) {
     const cumple = cumplePrereq(a);
-    salida.push(fila(a, cumple ? 'Sugerida' : 'Prerrequisito', cumple));
-  }
+    const esExtra = a.semestre !== semestreActual;
+    const cabeExtra = !esExtra || cupoExtra > 0;
+    const cabeCreditos = creditos + a.creditos <= MAX_CREDITOS;
+    const entra = cumple && cabeExtra && cabeCreditos;
 
-  const adeudadas = catalogo
-    .filter((x) => x.semestre < semestreActual && !codigosAprobados.has(x.codigo))
-    .sort(porCodigoAsc);
-  const siguientes =
-    semestreActual < ultimo ? catalogo.filter((x) => x.semestre === semestreActual + 1).sort(porCodigoAsc) : [];
-
-  let cupo = CUPO_EXTRA;
-  for (const a of [...adeudadas, ...siguientes]) {
-    const cumple = cumplePrereq(a);
-    const entra = cumple && cupo > 0;
-    if (entra) cupo--;
+    if (entra) {
+      creditos += a.creditos;
+      if (esExtra) cupoExtra--;
+    }
     salida.push(fila(a, entra ? 'Sugerida' : 'Prerrequisito', cumple));
   }
   return salida;
@@ -271,7 +269,7 @@ revisar(
 
 const creditosEsperados = esperado.filter((e) => e.estado === 'Sugerida').reduce((s, e) => s + e.creditos, 0);
 revisar('totalCreditos coincide con la regla', sugerencia.totalCreditos === creditosEsperados, `${sugerencia.totalCreditos} vs ${creditosEsperados}`);
-revisar('totalCreditos de Laura es 23', sugerencia.totalCreditos === 23, `es ${sugerencia.totalCreditos}`);
+revisar('totalCreditos de Laura es 18', sugerencia.totalCreditos === 18, `es ${sugerencia.totalCreditos}`);
 
 const f603702 = filas.find((f) => f.codigo === '603702');
 revisar(
@@ -286,8 +284,11 @@ revisar(
 );
 
 revisar(
-  'las filas Sugerida del semestre N+1 son solo 603701 y 603703',
-  filas.filter((f) => f.semestre === n + 1 && f.estado === 'Sugerida').map((f) => f.codigo).join(',') === '603701,603703',
+  'las filas del semestre N+1 quedan bloqueadas por el limite de 18 creditos',
+  ['603701', '603703'].every((c) => {
+    const f = filas.find((x) => x.codigo === c);
+    return f?.estado === 'Prerrequisito' && f.prerrequisitoCumplido === true && f.motivo === 'LIMITE_CREDITOS_EXCEDIDO';
+  }),
 );
 
 const extrasRegla = esperado.filter((e) => e.semestre !== n && e.estado === 'Sugerida').length;

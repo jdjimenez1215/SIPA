@@ -14,6 +14,7 @@ public class EnrollmentRulesEngineTests
         new ScheduleOverlapRule(),
         new SemesterWindowRule(),
         new ExtraSubjectsCapRule(),
+        new CreditLimitRule(),
         new NoDuplicateRule(),
         new SeatAvailabilityRule()
     });

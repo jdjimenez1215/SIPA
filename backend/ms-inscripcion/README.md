@@ -125,7 +125,7 @@ sequenceDiagram
 | # | Decisión | Por qué |
 |---|---|---|
 | 1 | **Controllers** (`[ApiController]`) en lugar de Minimal APIs | Unos 21 endpoints en 5 recursos: `[ApiController]` da ProblemDetails de binding, `ProducesResponseType` mejora Swagger y es fácil comprobar que no hay lógica en los controllers (solo `mediator.Send`). |
-| 2 | **Motor de reglas con patrón Strategy** en Domain | Una regla = una clase (`IEnrollmentRule`). El engine ejecuta las 7 reglas para cada materia **sin cortocircuito** y junta todas las violaciones. Se testea sin mocks ni base de datos. La regla N+3 son dos Strategies independientes (`SemesterWindowRule` y `ExtraSubjectsCapRule`). |
+| 2 | **Motor de reglas con patrón Strategy** en Domain | Una regla = una clase (`IEnrollmentRule`). El engine ejecuta las 8 reglas para cada materia **sin cortocircuito** y junta todas las violaciones. Se testea sin mocks ni base de datos. La regla N+3 son dos Strategies independientes (`SemesterWindowRule` y `ExtraSubjectsCapRule`); el tope de créditos es `CreditLimitRule` (18, o 20 con promedio > 4.0). |
 | 3 | **Bloqueo pesimista** `SELECT ... FOR UPDATE` sobre el estudiante y luego sobre las materias (ordenadas por id) + índice único parcial | Inscribir nunca modifica la fila de Materia, así que un token `xmin`/RowVersion sobre ella jamás cambiaría. Los cupos se cuentan por (materia, periodo). El lock del estudiante serializa solicitudes concurrentes de la misma persona (evita que dos pedidos con materias distintas que se cruzan pasen R3 a la vez). El orden fijo (estudiante y luego materias por id) evita deadlocks. El índice parcial es una red de seguridad para duplicados. |
 | 4 | **Repositorios + Unit of Work** en `Application/Abstractions/Persistence` | Application queda libre de EF Core; el SQL del lock y el mapeo de errores de Postgres (23505, 23503, 40P01, 40001) viven en Infrastructure; los handlers se mockean con Moq. |
 | 5 | **CPM** (Central Package Management) | Todas las versiones fijadas en `Directory.Packages.props`. |
@@ -213,16 +213,16 @@ docker compose up --build
 
 ### Pruebas E2E de todos los endpoints
 
-`scripts/e2e.sh` ejecuta 154 chequeos sobre los 21 endpoints: autenticación/autorización (401 sin token, 403 sin rol `Admin`, registro solo Admin, bloqueo IDOR entre estudiantes y rate limiting del login), la sugerencia de los cinco estudiantes de la semilla, la regla N + máx. 3 (tope, adeudada, activas que cuentan), prerrequisitos estrictos, `codigosMaterias`, camino feliz, validaciones, atomicidad, dos carreras concurrentes (mismo estudiante con materias que se cruzan y último cupo) y los errores del framework en formato ProblemDetails. Necesita **MiniIdentityApi corriendo** (`AUTH_ORIGIN`, por defecto `http://localhost:5132`) **con la misma `JWT_KEY` que el contenedor** y la semilla limpia, porque cada paso modifica el estado:
+`scripts/e2e.sh` ejecuta 155 chequeos sobre los 21 endpoints: autenticación/autorización (401 sin token, 403 sin rol `Admin`, registro solo Admin, bloqueo IDOR entre estudiantes y rate limiting del login), la sugerencia de los cinco estudiantes de la semilla, la regla N + máx. 3 (tope, adeudada, activas que cuentan), el tope de 18 créditos y la prioridad de materias antiguas, prerrequisitos estrictos, `codigosMaterias`, camino feliz, validaciones, atomicidad, dos carreras concurrentes (mismo estudiante con materias que se cruzan y último cupo) y los errores del framework en formato ProblemDetails. Necesita **MiniIdentityApi corriendo** (`AUTH_ORIGIN`, por defecto `http://localhost:5132`) **con la misma `JWT_KEY` que el contenedor** y la semilla limpia, porque cada paso modifica el estado:
 
 ```bash
 docker compose down -v && docker compose up --build -d
-PORT=8080 bash scripts/e2e.sh   # termina con "TOTAL: 154 passed, 0 failed"
+PORT=8080 bash scripts/e2e.sh   # termina con "TOTAL: 155 passed, 0 failed"
 ```
 
 ### Colección de Postman
 
-`postman/` tiene las mismas pruebas como colección de Postman: 98 requests en 11 carpetas (299 asserts con Newman), con asserts en cada request y un chequeo global de que todo error sea `application/problem+json` con `code` y `traceId`.
+`postman/` tiene las mismas pruebas como colección de Postman: 103 requests en 11 carpetas (300 asserts con Newman), con asserts en cada request y un chequeo global de que todo error sea `application/problem+json` con `code` y `traceId`.
 
 - **Token automático:** un *pre-request* de la colección hace `POST {authHost}/api/auth/login` (`admin` / `Admin123*`) y guarda el `accessToken` en la variable `token`; la colección autentica con `Bearer {{token}}`. `authHost` (por defecto `http://localhost:5132`) se puede sobrescribir en el environment. **Requiere MiniIdentityApi corriendo** y compartiendo la misma `JWT_KEY`.
 - **Postman:** importá `postman/MsInscripcion.postman_collection.json` y `postman/MsInscripcion.local.postman_environment.json`, elegí el environment *MsInscripcion - local* (ajustá `host` si usás otro puerto) y ejecutá la colección **en orden** con el Collection Runner, sobre la semilla limpia.
@@ -310,7 +310,7 @@ Cupo de 30 en todas salvo **603903 = 1** (Electiva Profesional III). Los semestr
 
 | Id | Nombre | Sem | Historial | Sugerencia (`GET /sugerencia`) |
 |---|---|---|---|---|
-| 1 | Laura Gómez Ríos | 6 | Semestres 1-5 aprobados (26 materias) | 12 filas, **23 créditos**: las 6 del semestre 6 + 603701 y 603703 son `Sugerida`; 603702, 603704, 603705 y 603706 son `Prerrequisito` (`prerrequisitoCumplido=false`) |
+| 1 | Laura Gómez Ríos | 6 | Semestres 1-5 aprobados (26 materias), promedio 3.82 | 12 filas, **18 créditos**: las 6 del semestre 6 son `Sugerida`; 603701 y 603703 quedan por `LIMITE_CREDITOS_EXCEDIDO`; 603702, 603704, 603705 y 603706 por prerrequisito |
 | 2 | Mateo Rojas Herrera | 7 | Semestres 1-6 aprobados | Semestre 7 completo `Sugerida`; 603801, 603802 y 603803 `Sugerida`; 603804 y 603806 `LIMITE_SIGUIENTE_SEMESTRE_EXCEDIDO` (con `prerrequisitoCumplido=true`); 603805 `PREREQUISITO_NO_CUMPLIDO` |
 | 3 | Camila Torres Vargas | 7 | Semestres 1-6 aprobados salvo **603305 Reprobada** | **603305 `Sugerida`** (adeudada, consume tope) + solo 603801 y 603802; 603803, 603804 y 603806 `LIMITE_SIGUIENTE_SEMESTRE_EXCEDIDO`; 603805 `PREREQUISITO_NO_CUMPLIDO` |
 | 4 | Sofía Martínez Ruiz | 8 | Semestres 1-7 aprobados | Semestre 8 completo `Sugerida`; 603901 `PREREQUISITO_NO_CUMPLIDO`; 603902 `CRUCE_HORARIO` (con 603801); 603903 `CUPO_AGOTADO` (lo ocupa Andrés); **603904 y 603905 `Sugerida`** (la fila con cruce y la sin cupo no consumen tope) |
@@ -401,7 +401,7 @@ Respuesta (12 filas en total; se muestran tres: dos `Sugerida` y la que bloquea 
   "programa": "Ingeniería de Sistemas",
   "semestreActual": 6,
   "periodo": "2026-2",
-  "totalCreditos": 23,
+  "totalCreditos": 18,
   "materiasSugeridas": [
     { "id": 27, "codigo": "603601", "nombre": "Ingeniería de Software II", "creditos": 3, "semestre": 6,
       "estado": "Sugerida", "prerrequisitoCumplido": true, "motivo": null },
@@ -414,7 +414,7 @@ Respuesta (12 filas en total; se muestran tres: dos `Sugerida` y la que bloquea 
 }
 ```
 
-Las 6 materias del semestre 6 más 603701 y 603703 suman **23 créditos** (3+3+3+3+4+2+3+2). 603702, 603704, 603705 y 603706 quedan como `Prerrequisito`. Otros estudiantes para ver el tope y los casos A3:
+Las 6 materias del semestre 6 suman **18 créditos** (3+3+3+3+4+2) y llenan el tope; 603701 y 603703 quedan bloqueadas por `LIMITE_CREDITOS_EXCEDIDO`, y 603702, 603704, 603705 y 603706 por prerrequisito. El orden de evaluación es por semestre ascendente (adeudadas más antiguas primero). Otros estudiantes para ver el tope y los casos A3:
 
 ```bash
 api http://localhost:8080/api/estudiantes/2/sugerencia   # Mateo: tope de 3 extras (603804/603806 LIMITE)

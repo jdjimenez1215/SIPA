@@ -11,6 +11,7 @@ public static class ErrorCodes
     public const string AlreadyEnrolled = "MATERIA_YA_INSCRITA";
     public const string SeatsExhausted = "CUPO_AGOTADO";
     public const string ExtraSubjectsCapExceeded = "LIMITE_SIGUIENTE_SEMESTRE_EXCEDIDO";
+    public const string CreditLimitExceeded = "LIMITE_CREDITOS_EXCEDIDO";
 
     // Domain invariants
     public const string PrerequisiteCycle = "PRERREQUISITO_CICLICO";

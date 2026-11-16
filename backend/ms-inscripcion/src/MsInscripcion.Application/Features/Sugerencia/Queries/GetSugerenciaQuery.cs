@@ -7,6 +7,7 @@ using MsInscripcion.Application.Common.Exceptions;
 using MsInscripcion.Application.Common.Options;
 using MsInscripcion.Application.Features.Sugerencia.Dtos;
 using MsInscripcion.Domain.Enums;
+using MsInscripcion.Domain.Rules;
 using MsInscripcion.Domain.Services;
 
 namespace MsInscripcion.Application.Features.Sugerencia.Queries;
@@ -63,6 +64,7 @@ public sealed class GetSugerenciaQueryHandler(
             .ToList();
 
         var totalCreditos = sugeridas.Where(s => s.Estado == EstadoSugerencia.Sugerida).Sum(s => s.Creditos);
+        var average = Math.Round(await students.GetAverageGradeAsync(student.Id, ct), 2);
 
         return new SugerenciaDto(
             student.Nombre,
@@ -71,6 +73,8 @@ public sealed class GetSugerenciaQueryHandler(
             period,
             totalCreditos,
             sugeridas,
-            []);
+            [],
+            average,
+            CreditPolicy.LimitFor(average));
     }
 }

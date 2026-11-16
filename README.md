@@ -1,6 +1,6 @@
 # SIPA - Proyecto Parcial
 
-Sistema de **sugerencia e inscripción de materias** para Ingeniería de Sistemas (Unillanos). Tiene un front web, una API de identidad (login JWT) y el microservicio de inscripción, que aplica la regla N+3: todo el semestre N más hasta 3 materias extra.
+Sistema de **sugerencia e inscripción de materias** para Ingeniería de Sistemas (Unillanos). Tiene un front web, una API de identidad (login JWT) y el microservicio de inscripción, que aplica la regla N+3 (semestre N más hasta 3 materias extra), **prioriza las materias más antiguas**, evita cruces de horario y respeta un **tope de 18 créditos** (20 si el promedio supera 4.0).
 
 ## Documentación
 
@@ -161,16 +161,18 @@ Si el destino está caído, el proxy responde `502 application/problem+json` (`P
 
 ### Qué deberías ver
 
-Tras iniciar sesión, `sugerencia-matricula.html` muestra a Laura con **12 filas**: **8 Sugeridas** (verde), **4 bloqueadas** por prerrequisito (amarillo, "Prerrequisito no aprobado") y **23 créditos** de total.
+Tras iniciar sesión, `sugerencia-matricula.html` muestra a Laura con **12 filas**: **6 Sugeridas** (verde, 18 créditos), **2 bloqueadas por el límite de créditos** (603701 y 603703) y **4 bloqueadas por prerrequisito**. Abajo aparece la tabla de **materias inscritas** del período.
+
+El límite es **18 créditos**, o **20** cuando el promedio histórico es mayor a 4.0. La sugerencia evalúa primero las materias adeudadas más antiguas y descarta las que se cruzan en horario.
 
 ### Verificación
 
 ```bash
-# Tests unitarios (119 ms + 27 identity), sin Docker
+# Tests unitarios (124 ms + 27 identity), sin Docker
 dotnet test backend/ms-inscripcion/tests/MsInscripcion.UnitTests
 dotnet test backend/mini-identity-api-dotnet/src/MiniIdentityApi.Tests
 
-# E2E del backend (154 checks; requiere el stack arriba y BD limpia)
+# E2E del backend (155 checks; requiere el stack arriba y BD limpia)
 PORT=8080 bash backend/ms-inscripcion/scripts/e2e.sh
 
 # Smoke vía el proxy (solo lectura/rechazo; no escribe en la BD)
@@ -184,7 +186,7 @@ Checklist manual:
 
 1. `validar-mocks.mjs` → 36/36.
 2. Login `admin` / `Admin123*` funciona por :5500.
-3. Tabla: 12 filas, 8 Sugeridas, 4 prerrequisito, total 23.
+3. Tabla: 12 filas, 6 Sugeridas, 2 bloqueadas por créditos, 4 por prerrequisito, total 18.
 4. 422: cargar la página, inscribir `603601` por `curl` (`POST /api/inscripciones`), confirmar en la UI → `MATERIA_YA_INSCRITA` en esa fila, alerta visible, sin recarga.
 5. 201 sobre BD limpia → alerta de éxito, la recarga deja solo las bloqueadas y el botón deshabilitado (reiniciar con `docker compose down -v`).
 6. `estudianteId: 999` → alerta 404; detener ms-inscripcion → alerta 502 con el origen.

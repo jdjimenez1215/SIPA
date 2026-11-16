@@ -42,4 +42,13 @@ internal sealed class StudentRepository(InscripcionDbContext context) : IStudent
             .ToListAsync(ct);
         return ids.ToHashSet();
     }
+
+    public async Task<decimal> GetAverageGradeAsync(int studentId, CancellationToken ct = default)
+    {
+        var average = await context.Historial.AsNoTracking()
+            .Where(h => h.EstudianteId == studentId && h.Estado == EstadoHistorial.Aprobada)
+            .AverageAsync(h => (decimal?)h.Nota, ct);
+
+        return average ?? 0m;
+    }
 }

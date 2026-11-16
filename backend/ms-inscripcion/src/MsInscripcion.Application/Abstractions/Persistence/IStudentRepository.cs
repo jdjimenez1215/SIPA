@@ -13,4 +13,7 @@ public interface IStudentRepository
 
     /// <summary>Ids of materias with an Aprobada history entry (Cursando/Reprobada do NOT count).</summary>
     Task<IReadOnlySet<int>> GetApprovedMateriaIdsAsync(int studentId, CancellationToken ct = default);
+
+    /// <summary>Average grade of approved subjects; 0 when the student has no approved history.</summary>
+    Task<decimal> GetAverageGradeAsync(int studentId, CancellationToken ct = default);
 }

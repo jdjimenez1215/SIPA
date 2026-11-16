@@ -108,20 +108,21 @@ t "inscripciones periodo default"   200 GET    /estudiantes/5/inscripciones "" '
 t "inscripciones Laura (vacias)"    200 GET    "/estudiantes/1/inscripciones?periodo=2026-2" "" "[]"
 t "inscripciones est. inexistente"  404 GET    /estudiantes/999/inscripciones "" ESTUDIANTE_NO_ENCONTRADO
 t "materias disponibles Laura"      200 GET    /estudiantes/1/materias-disponibles "" '"codigo":"603601"' '"codigo":"603702"'
-ck "disponibles = 8 Sugerida"       count_is '"codigo":' 8
-t "disponibles excluye aprobadas"   200 GET    /estudiantes/1/materias-disponibles "" '"codigo":"603703"' '"codigo":"603101"'
+ck "disponibles = 6 Sugerida (18 creditos)" count_is '"codigo":' 6
+t "disponibles excluye aprobadas"   200 GET    /estudiantes/1/materias-disponibles "" '"codigo":"603606"' '"codigo":"603101"'
 t "disponibles est. inexistente"    404 GET    /estudiantes/999/materias-disponibles "" ESTUDIANTE_NO_ENCONTRADO
 
 echo "== Sugerencia"
-t "sugerencia Laura"                200 GET    /estudiantes/1/sugerencia "" '"totalCreditos":23'
+t "sugerencia Laura"                200 GET    /estudiantes/1/sugerencia "" '"totalCreditos":18'
 ck "Laura: 12 filas"                count_is '"codigo":' 12
 ck "Laura: toda fila trae id"       count_is '"id":' 12
 ck "Laura: encabezado"              grep -q -F '"nombreEstudiante":"Laura Gómez Ríos","programa":"Ingeniería de Sistemas","semestreActual":6,"periodo":"2026-2"' <<<"$LAST"
 ck "Laura: notificaciones vacias"   grep -q -F '"notificaciones":[]' <<<"$LAST"
+ck "Laura: limite 18 y promedio 3.82" grep -q -F '"promedio":3.82,"limiteCreditos":18' <<<"$LAST"
 ck "Laura: 603601 Sugerida"         row 603601 Sugerida true null
 ck "Laura: 603606 Sugerida"         row 603606 Sugerida true null
-ck "Laura: 603701 Sugerida (N+1)"   row 603701 Sugerida true null
-ck "Laura: 603703 Sugerida (N+1)"   row 603703 Sugerida true null
+ck "Laura: 603701 bloqueada por creditos" row 603701 Prerrequisito true '"LIMITE_CREDITOS_EXCEDIDO"'
+ck "Laura: 603703 bloqueada por creditos" row 603703 Prerrequisito true '"LIMITE_CREDITOS_EXCEDIDO"'
 ck "Laura: 603702 Prerrequisito"    row 603702 Prerrequisito false '"PREREQUISITO_NO_CUMPLIDO"'
 ck "Laura: 603704 Prerrequisito"    row 603704 Prerrequisito false '"PREREQUISITO_NO_CUMPLIDO"'
 ck "Laura: 603705 Prerrequisito"    row 603705 Prerrequisito false '"PREREQUISITO_NO_CUMPLIDO"'
@@ -130,28 +131,28 @@ ck "Laura: sin aprobadas ni sem 8"  bash -c '! printf "%s" "$0" | grep -q -E "\"
 t "sugerencia con periodo explicito" 200 GET   "/estudiantes/1/sugerencia?periodo=2026-2" "" '"periodo":"2026-2"'
 t "sugerencia periodo invalido"     400 GET    "/estudiantes/1/sugerencia?periodo=2026-9" "" VALIDACION_FALLIDA
 t "sugerencia est. inexistente"     404 GET    /estudiantes/999/sugerencia "" ESTUDIANTE_NO_ENCONTRADO
-t "sugerencia Mateo (tope 3)"       200 GET    /estudiantes/2/sugerencia
-ck "Mateo: 603801 Sugerida"         row 603801 Sugerida true null
-ck "Mateo: 603802 Sugerida"         row 603802 Sugerida true null
-ck "Mateo: 603803 Sugerida"         row 603803 Sugerida true null
-ck "Mateo: 603804 LIMITE"           row 603804 Prerrequisito true '"LIMITE_SIGUIENTE_SEMESTRE_EXCEDIDO"'
-ck "Mateo: 603806 LIMITE"           row 603806 Prerrequisito true '"LIMITE_SIGUIENTE_SEMESTRE_EXCEDIDO"'
+t "sugerencia Mateo (18 creditos)"  200 GET    /estudiantes/2/sugerencia
+ck "Mateo: 603801 LIMITE"           row 603801 Prerrequisito true '"LIMITE_CREDITOS_EXCEDIDO"'
+ck "Mateo: 603802 LIMITE"           row 603802 Prerrequisito true '"LIMITE_CREDITOS_EXCEDIDO"'
+ck "Mateo: 603803 LIMITE"           row 603803 Prerrequisito true '"LIMITE_CREDITOS_EXCEDIDO"'
+ck "Mateo: 603804 LIMITE"           row 603804 Prerrequisito true '"LIMITE_CREDITOS_EXCEDIDO"'
+ck "Mateo: 603806 LIMITE"           row 603806 Prerrequisito true '"LIMITE_CREDITOS_EXCEDIDO"'
 ck "Mateo: 603805 prerrequisito"    row 603805 Prerrequisito false '"PREREQUISITO_NO_CUMPLIDO"'
 ck "Mateo: sem 7 completo Sugerida" row 603706 Sugerida true null
 t "sugerencia Camila (adeudada)"    200 GET    /estudiantes/3/sugerencia
 ck "Camila: 603305 adeudada Sugerida" row 603305 Sugerida true null
-ck "Camila: 603801 Sugerida"        row 603801 Sugerida true null
-ck "Camila: 603802 Sugerida"        row 603802 Sugerida true null
-ck "Camila: 603803 LIMITE"          row 603803 Prerrequisito true '"LIMITE_SIGUIENTE_SEMESTRE_EXCEDIDO"'
-ck "Camila: 603804 LIMITE"          row 603804 Prerrequisito true '"LIMITE_SIGUIENTE_SEMESTRE_EXCEDIDO"'
-ck "Camila: 603806 LIMITE"          row 603806 Prerrequisito true '"LIMITE_SIGUIENTE_SEMESTRE_EXCEDIDO"'
+ck "Camila: 603801 LIMITE"          row 603801 Prerrequisito true '"LIMITE_CREDITOS_EXCEDIDO"'
+ck "Camila: 603802 LIMITE"          row 603802 Prerrequisito true '"LIMITE_CREDITOS_EXCEDIDO"'
+ck "Camila: 603803 LIMITE"          row 603803 Prerrequisito true '"LIMITE_CREDITOS_EXCEDIDO"'
+ck "Camila: 603804 LIMITE"          row 603804 Prerrequisito true '"LIMITE_CREDITOS_EXCEDIDO"'
+ck "Camila: 603806 Sugerida"        row 603806 Sugerida true null
 ck "Camila: 603805 prerrequisito"   row 603805 Prerrequisito false '"PREREQUISITO_NO_CUMPLIDO"'
 t "sugerencia Sofia (A3)"           200 GET    /estudiantes/4/sugerencia
 ck "Sofia: 603901 prerrequisito"    row 603901 Prerrequisito false '"PREREQUISITO_NO_CUMPLIDO"'
 ck "Sofia: 603902 CRUCE_HORARIO"    row 603902 Prerrequisito true '"CRUCE_HORARIO"'
 ck "Sofia: 603903 CUPO_AGOTADO"     row 603903 Prerrequisito true '"CUPO_AGOTADO"'
-ck "Sofia: 603904 Sugerida"         row 603904 Sugerida true null
-ck "Sofia: 603905 Sugerida"         row 603905 Sugerida true null
+ck "Sofia: 603904 LIMITE"           row 603904 Prerrequisito true '"LIMITE_CREDITOS_EXCEDIDO"'
+ck "Sofia: 603905 LIMITE"           row 603905 Prerrequisito true '"LIMITE_CREDITOS_EXCEDIDO"'
 ck "Sofia: 603801 Sugerida (N)"     row 603801 Sugerida true null
 t "sugerencia Andres omite inscrita" 200 GET   /estudiantes/5/sugerencia "" '"semestreActual":9' '"codigo":"603903"'
 
@@ -229,8 +230,8 @@ t "cancelar ganador del cupo"       204 DELETE "/inscripciones/$RACE_WINNER"
 t "reinscribir tras cancelar (cupo liberado)" 201 POST /inscripciones "{\"estudianteId\":5,\"periodo\":\"2026-2\",\"materiaIds\":[$M]}" "\"materiaId\":$M"
 
 echo "== Inscripciones: camino feliz y cancelacion"
-t "Laura inscribe sus 8 Sugerida"   201 POST   /inscripciones '{"estudianteId":1,"periodo":"2026-2","codigosMaterias":["603601","603602","603603","603604","603605","603606","603701","603703"]}' '"materiaId":27'
-ck "se crean 8 inscripciones"       count_is '"estudianteId":' 8
+t "Laura inscribe sus 6 Sugerida (18 cr)" 201 POST /inscripciones '{"estudianteId":1,"periodo":"2026-2","codigosMaterias":["603601","603602","603603","603604","603605","603606"]}' '"materiaId":27'
+ck "se crean 6 inscripciones"       count_is '"estudianteId":' 6
 LAURA1=$(id_of)
 t "sugerencia omite las inscritas"  200 GET    /estudiantes/1/sugerencia "" '"codigo":"603702"' '"codigo":"603601"'
 t "ya inscrita"                     422 POST   /inscripciones '{"estudianteId":1,"periodo":"2026-2","codigosMaterias":["603601"]}' MATERIA_YA_INSCRITA

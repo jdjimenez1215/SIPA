@@ -20,6 +20,7 @@ public class SeedDataTests
         new ScheduleOverlapRule(),
         new SemesterWindowRule(),
         new ExtraSubjectsCapRule(),
+        new CreditLimitRule(),
         new NoDuplicateRule(),
         new SeatAvailabilityRule()
     }));
@@ -69,43 +70,51 @@ public class SeedDataTests
     }
 
     [Fact]
-    public void Laura_Suggestion_HasTwelveRowsAndTwentyThreeCredits()
+    public void Laura_Suggestion_RespectsTheEighteenCreditCap()
     {
         var rows = Suggest(Laura);
 
         rows.Should().HaveCount(12);
         Suggested(rows).Should().BeEquivalentTo(
-            "603601", "603602", "603603", "603604", "603605", "603606", "603701", "603703");
-        TotalCredits(rows).Should().Be(23);
+            "603601", "603602", "603603", "603604", "603605", "603606");
+        TotalCredits(rows).Should().Be(18);
         rows.Where(r => r.Estado == EstadoSugerencia.Prerrequisito)
             .Select(r => r.Materia.Codigo)
-            .Should().BeEquivalentTo("603702", "603704", "603705", "603706");
+            .Should().BeEquivalentTo("603701", "603702", "603703", "603704", "603705", "603706");
     }
 
     [Fact]
-    public void Laura_BlockedRows_HaveUnmetPrerequisite()
+    public void Laura_BlockedRows_HavePrerequisiteOrCreditReason()
     {
         var rows = Suggest(Laura);
 
-        rows.Where(r => r.Estado == EstadoSugerencia.Prerrequisito).Should().OnlyContain(r =>
-            !r.PrerrequisitoCumplido && r.Motivo == ErrorCodes.PrerequisiteNotMet);
+        rows.Where(r => !r.PrerrequisitoCumplido).Should().OnlyContain(r =>
+            r.Motivo == ErrorCodes.PrerequisiteNotMet);
+
+        foreach (var codigo in new[] { "603701", "603703" })
+        {
+            var row = Row(rows, codigo);
+            row.PrerrequisitoCumplido.Should().BeTrue();
+            row.Motivo.Should().Be(ErrorCodes.CreditLimitExceeded);
+        }
     }
 
     [Fact]
-    public void Mateo_Suggestion_FillsTheCapAndFlagsUnmetPrerequisite()
+    public void Mateo_Suggestion_UsesTheCurrentSemesterAndCreditCap()
     {
         var rows = Suggest(Mateo);
 
+        // Oldest-first: all of semester 7 (N) fits, so the N+1 extras hit the 18-credit cap.
         Suggested(rows).Should().BeEquivalentTo(
-            "603701", "603702", "603703", "603704", "603705", "603706",
-            "603801", "603802", "603803");
+            "603701", "603702", "603703", "603704", "603705", "603706");
+        TotalCredits(rows).Should().Be(17);
 
-        foreach (var codigo in new[] { "603804", "603806" })
+        foreach (var codigo in new[] { "603801", "603802", "603803", "603804", "603806" })
         {
             var row = Row(rows, codigo);
             row.Estado.Should().Be(EstadoSugerencia.Prerrequisito);
             row.PrerrequisitoCumplido.Should().BeTrue();
-            row.Motivo.Should().Be(ErrorCodes.ExtraSubjectsCapExceeded);
+            row.Motivo.Should().Be(ErrorCodes.CreditLimitExceeded);
         }
 
         var blocked = Row(rows, "603805");
@@ -115,24 +124,26 @@ public class SeedDataTests
     }
 
     [Fact]
-    public void Camila_Suggestion_OwedSubjectSharesTheCap()
+    public void Camila_Suggestion_PrioritizesTheOwedSubject()
     {
         var rows = Suggest(Camila);
 
-        // Semester 7 (N) is free of the cap; owed 603305 + 603801 + 603802 fill it.
         Suggested(rows).Should().BeEquivalentTo(
             "603305",
-            "603701", "603702", "603703", "603704", "603705", "603706",
-            "603801", "603802");
+            "603701", "603702", "603703", "603704", "603705",
+            "603806");
+        TotalCredits(rows).Should().Be(18);
 
-        foreach (var codigo in new[] { "603803", "603804", "603806" })
+        foreach (var codigo in new[] { "603706", "603801", "603802", "603803", "603804" })
         {
             var row = Row(rows, codigo);
             row.Estado.Should().Be(EstadoSugerencia.Prerrequisito);
             row.PrerrequisitoCumplido.Should().BeTrue();
-            row.Motivo.Should().Be(ErrorCodes.ExtraSubjectsCapExceeded);
+            row.Motivo.Should().Be(ErrorCodes.CreditLimitExceeded);
         }
 
+        // The oldest owed subject must be evaluated before any current-semester one.
+        rows.First().Materia.Codigo.Should().Be("603305");
         Row(rows, "603305").Materia.Semestre.Should().Be(3);
 
         var blocked = Row(rows, "603805");
@@ -141,12 +152,13 @@ public class SeedDataTests
     }
 
     [Fact]
-    public void Sofia_Suggestion_ShowsPrerequisiteClashAndSeatReasons()
+    public void Sofia_Suggestion_ShowsPrerequisiteClashSeatAndCreditReasons()
     {
         var rows = Suggest(Sofia);
 
         Suggested(rows).Should().BeEquivalentTo(
-            "603801", "603802", "603803", "603804", "603805", "603806", "603904", "603905");
+            "603801", "603802", "603803", "603804", "603805", "603806");
+        TotalCredits(rows).Should().Be(16);
 
         var prerequisite = Row(rows, "603901");
         prerequisite.PrerrequisitoCumplido.Should().BeFalse();
@@ -159,6 +171,23 @@ public class SeedDataTests
         var seats = Row(rows, "603903");
         seats.PrerrequisitoCumplido.Should().BeTrue();
         seats.Motivo.Should().Be(ErrorCodes.SeatsExhausted);
+
+        foreach (var codigo in new[] { "603904", "603905" })
+        {
+            var row = Row(rows, codigo);
+            row.PrerrequisitoCumplido.Should().BeTrue();
+            row.Motivo.Should().Be(ErrorCodes.CreditLimitExceeded);
+        }
+    }
+
+    [Fact]
+    public void Suggestion_ForEveryStudent_NeverExceedsEighteenCredits()
+    {
+        foreach (var student in SeedData.Estudiantes)
+        {
+            TotalCredits(Suggest(student.Id))
+                .Should().BeLessThanOrEqualTo(18, because: student.Nombre);
+        }
     }
 
     [Fact]
