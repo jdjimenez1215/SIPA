@@ -89,6 +89,14 @@ st_no_admin=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$B/carreras" \
   -H "$J" -H "$AUSERH" -d '{"codigo":"NOP","nombre":"Nope","duracionSemestres":1}')
 ck "usuario sin rol Admin -> 403" test "$st_no_admin" = 403
 
+# Un estudiante puede cancelar su propia inscripción (no la de otro).
+st_own=$(curl -s -o "$TMP/own" -w '%{http_code}' -X POST "$B/inscripciones" -H "$J" -H "$AUSERH" \
+  -d '{"estudianteId":2,"periodo":"2026-2","codigosMaterias":["603801"]}')
+OWN_ID=$(grep -oP '"id":\K\d+' "$TMP/own" | head -1)
+ck "estudiante inscribe su propia materia -> 201" test "$st_own" = 201
+st_own_cancel=$(curl -s -o /dev/null -w '%{http_code}' -X DELETE "$B/inscripciones/$OWN_ID" -H "$AUSERH")
+ck "estudiante cancela su propia inscripcion -> 204" test "$st_own_cancel" = 204
+
 echo "== Carreras"
 t "listar carreras"                 200 GET    /carreras "" '"codigo":"ING-SIS"'
 t "carrera por id"                  200 GET    /carreras/1 "" '"codigo":"ING-SIS"'
@@ -234,6 +242,8 @@ echo "== Inscripciones: camino feliz y cancelacion"
 t "Laura inscribe sus 6 Sugerida (18 cr)" 201 POST /inscripciones '{"estudianteId":1,"periodo":"2026-2","codigosMaterias":["603601","603602","603603","603604","603605","603606"]}' '"materiaId":27'
 ck "se crean 6 inscripciones"       count_is '"estudianteId":' 6
 LAURA1=$(id_of)
+st_cancel_other=$(curl -s -o /dev/null -w '%{http_code}' -X DELETE "$B/inscripciones/$LAURA1" -H "$AUSERH")
+ck "estudiante no cancela inscripcion ajena -> 403" test "$st_cancel_other" = 403
 t "sugerencia omite las inscritas"  200 GET    /estudiantes/1/sugerencia "" '"codigo":"603702"' '"codigo":"603601"'
 t "ya inscrita"                     422 POST   /inscripciones '{"estudianteId":1,"periodo":"2026-2","codigosMaterias":["603601"]}' MATERIA_YA_INSCRITA
 t "Camila 801-803 sin adeudada (A2)" 201 POST  /inscripciones '{"estudianteId":3,"periodo":"2026-2","codigosMaterias":["603801","603802","603803"]}' '"materiaId":39'

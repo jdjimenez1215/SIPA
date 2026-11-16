@@ -144,6 +144,11 @@ const MatriculaApi = {
     return this._request('GET', API_CONFIG.endpoints.sugerencia(estudianteId, periodo));
   },
 
+  /** DELETE /api/inscripciones/{id} (estudiante dueño o Admin). */
+  async cancelarInscripcion(id) {
+    return this._request('DELETE', `/api/inscripciones/${id}`);
+  },
+
   /** GET /api/estudiantes/{id}/inscripciones?periodo=... */
   async obtenerInscripciones() {
     if (API_CONFIG.useMock) {
@@ -462,7 +467,7 @@ const UIManager = {
     if (lista.length === 0) {
       const fila = document.createElement('tr');
       const celda = document.createElement('td');
-      celda.colSpan = 4;
+      celda.colSpan = 5;
       celda.className = 'text-center text-muted';
       celda.textContent = mensajeVacio || 'Sin materias inscritas en este período.';
       fila.appendChild(celda);
@@ -478,6 +483,7 @@ const UIManager = {
 
       const fila = document.createElement('tr');
       fila.setAttribute('data-codigo', materia.codigo || '');
+      fila.setAttribute('data-inscripcion-id', inscripcion.id);
       fila.appendChild(this._celda(materia.codigo || ''));
       fila.appendChild(this._celda(materia.nombre || ''));
       fila.appendChild(this._celda(materia.creditos != null ? materia.creditos : ''));
@@ -488,6 +494,15 @@ const UIManager = {
       badge.textContent = inscripcion.estado || 'Activa';
       tdEstado.appendChild(badge);
       fila.appendChild(tdEstado);
+
+      const tdAccion = document.createElement('td');
+      const boton = document.createElement('button');
+      boton.type = 'button';
+      boton.className = 'btn btn-xs btn-danger btn-cancelar-inscripcion';
+      boton.setAttribute('data-id', inscripcion.id);
+      boton.textContent = 'Cancelar';
+      tdAccion.appendChild(boton);
+      fila.appendChild(tdAccion);
 
       tbody.appendChild(fila);
     });
@@ -605,6 +620,35 @@ const App = {
     await this.cargarInscripciones();
   },
 
+  /** Cancela una inscripción y refresca sugerencia + inscritas (libera cupo). */
+  async cancelarInscripcion(id, boton) {
+    const fila = boton ? boton.closest('tr') : null;
+    const codigo = fila ? fila.getAttribute('data-codigo') : '';
+    if (!window.confirm(`¿Cancelar la inscripción de ${codigo || 'esta materia'}?`)) return;
+
+    if (boton) boton.disabled = true;
+    const resultado = await MatriculaApi.cancelarInscripcion(id);
+    if (resultado.status === 401) {
+      window.location.replace('index.html');
+      return;
+    }
+    if (resultado.status === 204) {
+      UIManager.mostrarAlerta('success', `Inscripción de ${codigo} cancelada.`);
+      await this.cargarSugerencia({ conservarAlerta: true });
+      await this.cargarInscripciones();
+      return;
+    }
+
+    if (boton) boton.disabled = false;
+    if (resultado.status === 403) {
+      UIManager.mostrarAlerta('danger', 'No tiene permiso para cancelar esa inscripción.');
+    } else if (resultado.status === 409) {
+      UIManager.mostrarAlerta('warning', 'La inscripción ya estaba cancelada.');
+    } else {
+      UIManager.mostrarAlerta('danger', describirProblema(resultado));
+    }
+  },
+
   /** Carga las materias ya inscritas en el período y las pinta al final. */
   async cargarInscripciones() {
     const resultado = await MatriculaApi.obtenerInscripciones();
@@ -695,6 +739,14 @@ const App = {
         if (evento.target && evento.target.classList.contains('materia-check')) {
           this.actualizarSeleccion();
         }
+      });
+    }
+
+    const inscritasBody = document.getElementById('tabla-inscritas-body');
+    if (inscritasBody) {
+      inscritasBody.addEventListener('click', evento => {
+        const boton = evento.target.closest('.btn-cancelar-inscripcion');
+        if (boton) this.cancelarInscripcion(Number(boton.getAttribute('data-id')), boton);
       });
     }
 

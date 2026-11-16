@@ -165,7 +165,9 @@ Tras iniciar sesión, `sugerencia-matricula.html` muestra a Laura con **12 filas
 
 El límite es **18 créditos**, o **20** cuando el promedio histórico es **4.0 o más**. La sugerencia evalúa primero las materias adeudadas más antiguas y descarta las que se cruzan en horario.
 
-Cada fila muestra sus **cupos disponibles / máximos** y una casilla **Incluir** (marcada por defecto; las bloqueadas no se pueden marcar). Al desmarcar una materia bajan los créditos seleccionados y solo se inscriben las que queden marcadas.
+Cada fila muestra sus **cupos disponibles / máximos** y una casilla de selección (marcada por defecto; las bloqueadas no se pueden marcar). Al desmarcar una materia bajan los créditos seleccionados y solo se inscriben las que queden marcadas.
+
+En **Materias inscritas** cada fila tiene un botón **Cancelar** (el estudiante puede cancelar las suyas; Admin cualquiera), que libera el cupo y devuelve la materia a la sugerencia.
 
 ### Verificación
 
@@ -174,7 +176,7 @@ Cada fila muestra sus **cupos disponibles / máximos** y una casilla **Incluir**
 dotnet test backend/ms-inscripcion/tests/MsInscripcion.UnitTests
 dotnet test backend/mini-identity-api-dotnet/src/MiniIdentityApi.Tests
 
-# E2E del backend (156 checks; requiere el stack arriba y BD limpia)
+# E2E del backend (159 checks; requiere el stack arriba y BD limpia)
 PORT=8080 bash backend/ms-inscripcion/scripts/e2e.sh
 
 # Smoke vía el proxy (solo lectura/rechazo; no escribe en la BD)

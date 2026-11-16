@@ -119,7 +119,9 @@ Además:
 | Errores visibles | Un 422 marca **cada fila** con su error; los demás errores muestran el `detail` de la API |
 | Mock corregido | `sugerencia_mock.json` refleja el tope de **18 créditos** y el bloqueo por `LIMITE_CREDITOS_EXCEDIDO` |
 | Materias inscritas | Tabla debajo de la sugerencia con lo ya inscrito en el período y su total de créditos |
-| Selección y cupos | Casilla **Incluir** por materia (solo se inscriben las marcadas), contador de créditos seleccionados y columna de **cupos disponibles / máximos** |
+| Selección y cupos | Casilla por materia (solo se inscriben las marcadas), contador de créditos seleccionados y columna de **cupos disponibles / máximos** |
+| Cancelar inscripción | Botón **Cancelar** en la tabla de inscritas; el estudiante cancela las suyas y Admin cualquiera. El cupo se libera |
+| Sin enlaces a SIAU | Se quitaron foto/contraseña/manuales/acerca de y el favicon externo; solo queda **Cerrar sesión** local |
 
 ### Bugs corregidos
 
