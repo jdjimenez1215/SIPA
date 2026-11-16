@@ -214,7 +214,6 @@ const UIManager = {
       promedioEstudiante:  document.getElementById('promedio-estudiante'),
       creditosSeleccionados: document.getElementById('creditos-seleccionados'),
       btnConfirmar:        document.getElementById('btn-confirmar'),
-      btnToggleTodas:      document.getElementById('btn-toggle-todas'),
       alertContainer:      document.getElementById('alert-container'),
       navFechaHoraTxt:     document.getElementById('navFechaHoraTxt'),
       numNotificaciones:   document.getElementById('num-notificaciones'),
@@ -627,10 +626,6 @@ const App = {
     if (UIManager.el.creditosSeleccionados) {
       UIManager.el.creditosSeleccionados.textContent = creditos;
     }
-    if (UIManager.el.btnToggleTodas) {
-      const todasMarcadas = checks.length > 0 && checks.every(check => check.checked);
-      UIManager.el.btnToggleTodas.textContent = todasMarcadas ? 'Desmarcar todas' : 'Marcar todas';
-    }
     UIManager.setBotonConfirmar({ habilitado: seleccionadas.length > 0 });
   },
 
@@ -682,15 +677,6 @@ const App = {
         if (evento.target && evento.target.classList.contains('materia-check')) {
           this.actualizarSeleccion();
         }
-      });
-    }
-
-    if (UIManager.el.btnToggleTodas) {
-      UIManager.el.btnToggleTodas.addEventListener('click', () => {
-        const checks = Array.from(document.querySelectorAll('#tabla-materias-body .materia-check:not(:disabled)'));
-        const todasMarcadas = checks.length > 0 && checks.every(check => check.checked);
-        checks.forEach(check => { check.checked = !todasMarcadas; });
-        this.actualizarSeleccion();
       });
     }
 
