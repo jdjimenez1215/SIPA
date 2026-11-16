@@ -32,8 +32,9 @@ const API_CONFIG = {
   estudianteId: Number(sessionStorage.getItem('sipa.auth.estudianteId')) || 1,
   periodo: '2026-2',
   endpoints: {
-    sugerencia: (id, periodo) => `/api/estudiantes/${id}/sugerencia?periodo=${encodeURIComponent(periodo)}`,
-    confirmar:  '/api/inscripciones'
+    sugerencia:    (id, periodo) => `/api/estudiantes/${id}/sugerencia?periodo=${encodeURIComponent(periodo)}`,
+    inscripciones: (id, periodo) => `/api/estudiantes/${id}/inscripciones?periodo=${encodeURIComponent(periodo)}`,
+    confirmar:     '/api/inscripciones'
   },
   useMock: false,         // ← true para la demo offline (sin backend)
   mockDelayMs: 400        // simula latencia de red en el mock
@@ -142,6 +143,16 @@ const MatriculaApi = {
     return this._request('GET', API_CONFIG.endpoints.sugerencia(estudianteId, periodo));
   },
 
+  /** GET /api/estudiantes/{id}/inscripciones?periodo=... */
+  async obtenerInscripciones() {
+    if (API_CONFIG.useMock) {
+      await this._esperar(API_CONFIG.mockDelayMs);
+      return { ok: true, status: 200, body: [] };
+    }
+    const { estudianteId, periodo } = API_CONFIG;
+    return this._request('GET', API_CONFIG.endpoints.inscripciones(estudianteId, periodo));
+  },
+
   /**
    * POST /api/inscripciones
    * @param {{estudianteId:number, periodo:string, materiaIds:Array}} payload
@@ -194,6 +205,9 @@ const UIManager = {
       userNombre:          document.getElementById('user-nombre'),
       userPrograma:        document.getElementById('user-programa'),
       tablaBody:           document.getElementById('tabla-materias-body'),
+      tablaInscritasBody:  document.getElementById('tabla-inscritas-body'),
+      totalInscritos:      document.getElementById('total-creditos-inscritos'),
+      periodoInscritas:    document.getElementById('periodo-inscritas'),
       totalCreditos:       document.getElementById('total-creditos'),
       btnConfirmar:        document.getElementById('btn-confirmar'),
       alertContainer:      document.getElementById('alert-container'),
@@ -373,6 +387,53 @@ const UIManager = {
     return total;
   },
 
+  /* ---------- Tabla de materias inscritas ---------- */
+  renderInscritas(inscripciones, mensajeVacio) {
+    const tbody = this.el.tablaInscritasBody;
+    if (!tbody) return;
+    tbody.textContent = '';
+
+    if (this.el.periodoInscritas) {
+      this.el.periodoInscritas.textContent = API_CONFIG.periodo;
+    }
+
+    const lista = Array.isArray(inscripciones) ? inscripciones : [];
+    if (lista.length === 0) {
+      const fila = document.createElement('tr');
+      const celda = document.createElement('td');
+      celda.colSpan = 4;
+      celda.className = 'text-center text-muted';
+      celda.textContent = mensajeVacio || 'Sin materias inscritas en este período.';
+      fila.appendChild(celda);
+      tbody.appendChild(fila);
+      if (this.el.totalInscritos) this.el.totalInscritos.textContent = '0';
+      return;
+    }
+
+    let totalCreditos = 0;
+    lista.forEach(inscripcion => {
+      const materia = inscripcion.materia || {};
+      totalCreditos += Number(materia.creditos || 0);
+
+      const fila = document.createElement('tr');
+      fila.setAttribute('data-codigo', materia.codigo || '');
+      fila.appendChild(this._celda(materia.codigo || ''));
+      fila.appendChild(this._celda(materia.nombre || ''));
+      fila.appendChild(this._celda(materia.creditos != null ? materia.creditos : ''));
+
+      const tdEstado = document.createElement('td');
+      const badge = document.createElement('span');
+      badge.className = 'badge badge-success';
+      badge.textContent = inscripcion.estado || 'Activa';
+      tdEstado.appendChild(badge);
+      fila.appendChild(tdEstado);
+
+      tbody.appendChild(fila);
+    });
+
+    if (this.el.totalInscritos) this.el.totalInscritos.textContent = totalCreditos;
+  },
+
   /* ---------- Notificaciones (campo opcional del contrato) ---------- */
   renderNotificaciones(notificaciones) {
     const lista = Array.isArray(notificaciones) ? notificaciones : [];
@@ -480,6 +541,21 @@ const App = {
     UIManager.iniciarReloj();
     this._suscribirEventos();
     await this.cargarSugerencia();
+    await this.cargarInscripciones();
+  },
+
+  /** Carga las materias ya inscritas en el período y las pinta al final. */
+  async cargarInscripciones() {
+    const resultado = await MatriculaApi.obtenerInscripciones();
+    if (!resultado.ok) {
+      if (resultado.status === 401) {
+        window.location.replace('index.html');
+        return;
+      }
+      UIManager.renderInscritas([], 'No se pudieron cargar las materias inscritas.');
+      return;
+    }
+    UIManager.renderInscritas(resultado.body);
   },
 
   _haySugeridas() {
@@ -581,7 +657,10 @@ const App = {
       UIManager.setBotonConfirmar({ habilitado: this._haySugeridas(), texto: 'Confirmar Matrícula' });
     }
 
-    if (recargar) await this.cargarSugerencia({ conservarAlerta: true });
+    if (recargar) {
+      await this.cargarSugerencia({ conservarAlerta: true });
+      await this.cargarInscripciones();
+    }
   }
 };
 
