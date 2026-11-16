@@ -214,6 +214,7 @@ const UIManager = {
       promedioEstudiante:  document.getElementById('promedio-estudiante'),
       creditosSeleccionados: document.getElementById('creditos-seleccionados'),
       btnConfirmar:        document.getElementById('btn-confirmar'),
+      btnToggleTodas:      document.getElementById('btn-toggle-todas'),
       alertContainer:      document.getElementById('alert-container'),
       navFechaHoraTxt:     document.getElementById('navFechaHoraTxt'),
       numNotificaciones:   document.getElementById('num-notificaciones'),
@@ -613,12 +614,22 @@ const App = {
     return this._seleccionadas().length > 0;
   },
 
-  /** Recalcula créditos seleccionados y habilita/deshabilita el botón. */
+  /** Recalcula créditos seleccionados, estilos de fila y botones. */
   actualizarSeleccion() {
+    const checks = Array.from(document.querySelectorAll('#tabla-materias-body .materia-check:not(:disabled)'));
+    checks.forEach(check => {
+      const fila = check.closest('tr');
+      if (fila) fila.classList.toggle('materia-excluida', !check.checked);
+    });
+
     const seleccionadas = this._seleccionadas();
     const creditos = seleccionadas.reduce((total, m) => total + Number(m.creditos || 0), 0);
     if (UIManager.el.creditosSeleccionados) {
       UIManager.el.creditosSeleccionados.textContent = creditos;
+    }
+    if (UIManager.el.btnToggleTodas) {
+      const todasMarcadas = checks.length > 0 && checks.every(check => check.checked);
+      UIManager.el.btnToggleTodas.textContent = todasMarcadas ? 'Desmarcar todas' : 'Marcar todas';
     }
     UIManager.setBotonConfirmar({ habilitado: seleccionadas.length > 0 });
   },
@@ -654,6 +665,9 @@ const App = {
   },
 
   _suscribirEventos() {
+    if (this._eventosSuscritos) return;   // evita listeners duplicados si init corre dos veces
+    this._eventosSuscritos = true;
+
     const cerrarSesion = document.getElementById('cerrar-sesion');
     if (cerrarSesion) {
       cerrarSesion.addEventListener('click', evento => {
@@ -668,6 +682,15 @@ const App = {
         if (evento.target && evento.target.classList.contains('materia-check')) {
           this.actualizarSeleccion();
         }
+      });
+    }
+
+    if (UIManager.el.btnToggleTodas) {
+      UIManager.el.btnToggleTodas.addEventListener('click', () => {
+        const checks = Array.from(document.querySelectorAll('#tabla-materias-body .materia-check:not(:disabled)'));
+        const todasMarcadas = checks.length > 0 && checks.every(check => check.checked);
+        checks.forEach(check => { check.checked = !todasMarcadas; });
+        this.actualizarSeleccion();
       });
     }
 

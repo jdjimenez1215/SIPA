@@ -133,6 +133,9 @@ class SipaHandler(SimpleHTTPRequestHandler):
 
     # ---------- verbs ----------
     def end_headers(self):
+        # Static files change during development: never let the browser cache them.
+        if not self.path.startswith("/api/"):
+            self.send_header("Cache-Control", "no-store")
         self.send_header("X-Content-Type-Options", "nosniff")
         super().end_headers()
 

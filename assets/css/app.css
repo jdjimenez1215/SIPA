@@ -160,3 +160,14 @@ input[type="checkbox"] + label span {
 }
 .violacion { color: #a94442; }
 .badge-violacion { margin-left: 4px; }
+
+/* Fila que el estudiante desmarcó: no se inscribirá. */
+tr.materia-excluida > td {
+	opacity: .5;
+	text-decoration: line-through;
+}
+tr.materia-excluida > td:first-child,
+tr.materia-excluida > td:last-child {
+	text-decoration: none;
+	opacity: 1;
+}
