@@ -60,12 +60,22 @@ public class CreditLimitRuleTests
     }
 
     [Fact]
-    public void ExactlyFourDoesNotUnlockTwentyCredits()
+    public void ExactlyFourUnlocksTwentyCredits()
+    {
+        var active = Subject(2, 2);
+        var candidate = Subject(1, 18);
+
+        new CreditLimitRule().Evaluate(Context(4.0m, [active], candidate), candidate)
+            .Should().BeEmpty();
+    }
+
+    [Fact]
+    public void BelowFourBlocksMoreThanEighteen()
     {
         var active = Subject(2, 2);
         var candidate = Subject(1, 17);
 
-        new CreditLimitRule().Evaluate(Context(4.0m, [active], candidate), candidate)
+        new CreditLimitRule().Evaluate(Context(3.99m, [active], candidate), candidate)
             .Should().ContainSingle(v => v.Code == ErrorCodes.CreditLimitExceeded);
     }
 }

@@ -1,6 +1,6 @@
 # SIPA - Proyecto Parcial
 
-Sistema de **sugerencia e inscripción de materias** para Ingeniería de Sistemas (Unillanos). Tiene un front web, una API de identidad (login JWT) y el microservicio de inscripción, que aplica la regla N+3 (semestre N más hasta 3 materias extra), **prioriza las materias más antiguas**, evita cruces de horario y respeta un **tope de 18 créditos** (20 si el promedio supera 4.0).
+Sistema de **sugerencia e inscripción de materias** para Ingeniería de Sistemas (Unillanos). Tiene un front web, una API de identidad (login JWT) y el microservicio de inscripción, que aplica la regla N+3 (semestre N más hasta 3 materias extra), **prioriza las materias más antiguas**, evita cruces de horario y respeta un **tope de 18 créditos** (20 si el promedio es 4.0 o más).
 
 ## Documentación
 
@@ -163,12 +163,12 @@ Si el destino está caído, el proxy responde `502 application/problem+json` (`P
 
 Tras iniciar sesión, `sugerencia-matricula.html` muestra a Laura con **12 filas**: **6 Sugeridas** (verde, 18 créditos), **2 bloqueadas por el límite de créditos** (603701 y 603703) y **4 bloqueadas por prerrequisito**. Abajo aparece la tabla de **materias inscritas** del período.
 
-El límite es **18 créditos**, o **20** cuando el promedio histórico es mayor a 4.0. La sugerencia evalúa primero las materias adeudadas más antiguas y descarta las que se cruzan en horario.
+El límite es **18 créditos**, o **20** cuando el promedio histórico es **4.0 o más**. La sugerencia evalúa primero las materias adeudadas más antiguas y descarta las que se cruzan en horario.
 
 ### Verificación
 
 ```bash
-# Tests unitarios (124 ms + 27 identity), sin Docker
+# Tests unitarios (125 ms + 27 identity), sin Docker
 dotnet test backend/ms-inscripcion/tests/MsInscripcion.UnitTests
 dotnet test backend/mini-identity-api-dotnet/src/MiniIdentityApi.Tests
 

@@ -100,16 +100,16 @@ public class SeedDataTests
     }
 
     [Fact]
-    public void Mateo_Suggestion_UsesTheCurrentSemesterAndCreditCap()
+    public void Mateo_Suggestion_UsesTwentyCreditsBecauseHisAverageIsFour()
     {
         var rows = Suggest(Mateo);
 
-        // Oldest-first: all of semester 7 (N) fits, so the N+1 extras hit the 18-credit cap.
+        // Average is exactly 4.0 -> 20-credit limit. All of N (17) + 603801 fit.
         Suggested(rows).Should().BeEquivalentTo(
-            "603701", "603702", "603703", "603704", "603705", "603706");
-        TotalCredits(rows).Should().Be(17);
+            "603701", "603702", "603703", "603704", "603705", "603706", "603801");
+        TotalCredits(rows).Should().Be(20);
 
-        foreach (var codigo in new[] { "603801", "603802", "603803", "603804", "603806" })
+        foreach (var codigo in new[] { "603802", "603803", "603804", "603806" })
         {
             var row = Row(rows, codigo);
             row.Estado.Should().Be(EstadoSugerencia.Prerrequisito);
@@ -130,11 +130,10 @@ public class SeedDataTests
 
         Suggested(rows).Should().BeEquivalentTo(
             "603305",
-            "603701", "603702", "603703", "603704", "603705",
-            "603806");
-        TotalCredits(rows).Should().Be(18);
+            "603701", "603702", "603703", "603704", "603705", "603706");
+        TotalCredits(rows).Should().Be(19);
 
-        foreach (var codigo in new[] { "603706", "603801", "603802", "603803", "603804" })
+        foreach (var codigo in new[] { "603801", "603802", "603803", "603804", "603806" })
         {
             var row = Row(rows, codigo);
             row.Estado.Should().Be(EstadoSugerencia.Prerrequisito);
@@ -157,8 +156,8 @@ public class SeedDataTests
         var rows = Suggest(Sofia);
 
         Suggested(rows).Should().BeEquivalentTo(
-            "603801", "603802", "603803", "603804", "603805", "603806");
-        TotalCredits(rows).Should().Be(16);
+            "603801", "603802", "603803", "603804", "603805", "603806", "603904");
+        TotalCredits(rows).Should().Be(19);
 
         var prerequisite = Row(rows, "603901");
         prerequisite.PrerrequisitoCumplido.Should().BeFalse();
@@ -172,21 +171,18 @@ public class SeedDataTests
         seats.PrerrequisitoCumplido.Should().BeTrue();
         seats.Motivo.Should().Be(ErrorCodes.SeatsExhausted);
 
-        foreach (var codigo in new[] { "603904", "603905" })
-        {
-            var row = Row(rows, codigo);
-            row.PrerrequisitoCumplido.Should().BeTrue();
-            row.Motivo.Should().Be(ErrorCodes.CreditLimitExceeded);
-        }
+        var credit = Row(rows, "603905");
+        credit.PrerrequisitoCumplido.Should().BeTrue();
+        credit.Motivo.Should().Be(ErrorCodes.CreditLimitExceeded);
     }
 
     [Fact]
-    public void Suggestion_ForEveryStudent_NeverExceedsEighteenCredits()
+    public void Suggestion_ForEveryStudent_NeverExceedsTwentyCredits()
     {
         foreach (var student in SeedData.Estudiantes)
         {
             TotalCredits(Suggest(student.Id))
-                .Should().BeLessThanOrEqualTo(18, because: student.Nombre);
+                .Should().BeLessThanOrEqualTo(20, because: student.Nombre);
         }
     }
 
@@ -229,7 +225,13 @@ public class SeedDataTests
             .GroupBy(i => i.MateriaId)
             .ToDictionary(g => g.Key, g => g.Count());
 
-        var baseContext = new EnrollmentContext(student, Period, 3, approved, active, seatCounts, []);
+        var notas = SeedData.Historial
+            .Where(h => h.EstudianteId == studentId && h.Estado == EstadoHistorial.Aprobada)
+            .Select(h => h.Nota ?? 0m)
+            .ToList();
+        var average = notas.Count == 0 ? 0m : notas.Average();
+
+        var baseContext = new EnrollmentContext(student, Period, 3, approved, active, seatCounts, [], average);
 
         return Calculator.Suggest(baseContext, materias.Where(m => m.CarreraId == student.CarreraId));
     }

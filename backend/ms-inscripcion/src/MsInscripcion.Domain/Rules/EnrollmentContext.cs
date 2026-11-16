@@ -12,7 +12,7 @@ public sealed record EnrollmentContext(
     IReadOnlyList<Materia> Candidates,                   // request order, with Horarios + Prerrequisitos
     decimal StudentAverage = 0m)                         // historical average (0 when unknown)
 {
-    /// <summary>18 credits normally; 20 when the student's average is above 4.0.</summary>
+    /// <summary>18 credits normally; 20 when the student's average is 4.0 or higher.</summary>
     public int MaxCredits => CreditPolicy.LimitFor(StudentAverage);
 
     /// <summary>Candidates that appear earlier in the request than the given materia.</summary>

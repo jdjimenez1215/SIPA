@@ -69,7 +69,7 @@ Un estudiante en el semestre **N** puede inscribir:
 2. **Todo el semestre N** que quepa en el tope de créditos.
 3. **Hasta 3 materias "extra"**, compartidas entre adeudadas y N+1.
 4. Nada por encima de N+1 (`SEMESTRE_EXCEDIDO`).
-5. **Tope de créditos**: 18 por período, o **20 si el promedio histórico es mayor a 4.0** (`LIMITE_CREDITOS_EXCEDIDO`).
+5. **Tope de créditos**: 18 por período, o **20 si el promedio histórico es 4.0 o más** (`LIMITE_CREDITOS_EXCEDIDO`).
 
 Además:
 
@@ -100,7 +100,7 @@ Además:
 | Ajuste | Antes | Ahora |
 |---|---|---|
 | Regla de semestres | Hasta el semestre N+3, sin tope | Semestre N + máx. 3 extras (adeudadas + N+1) |
-| Tope de créditos | Sin tope | 18 créditos (20 si promedio > 4.0), priorizando adeudadas |
+| Tope de créditos | Sin tope | 18 créditos (20 si promedio >= 4.0), priorizando adeudadas |
 | Configuración | `Enrollment:MaxSemestersAhead` | `Enrollment:MaxNextSemesterSubjects` (= 3) |
 | Endpoint nuevo | — | `GET /api/estudiantes/{id}/sugerencia` con la forma que espera el front + `id` y `motivo` por fila |
 | Inscribir | solo `materiaIds` | `materiaIds` **o** `codigosMaterias` (ej. `"603601"`) |

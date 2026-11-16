@@ -3,7 +3,7 @@ using MsInscripcion.Domain.Entities;
 namespace MsInscripcion.Domain.Rules;
 
 /// <summary>
-/// Credit cap per period: 18 credits, or 20 when the student's historical average is above 4.0.
+/// Credit cap per period: 18 credits, or 20 when the student's historical average is 4.0 or higher.
 /// Counts already-active enrollments plus earlier candidates of the same request.
 /// </summary>
 public sealed class CreditLimitRule : IEnrollmentRule

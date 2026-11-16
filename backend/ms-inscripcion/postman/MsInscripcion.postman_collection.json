@@ -587,7 +587,7 @@
                   "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
                   "const body = pm.response.json();",
                   "const by = Object.fromEntries(body.materiasSugeridas.map(r => [r.codigo, r]));",
-                  "pm.test(\"603801 bloqueada por creditos\", () => pm.expect(by[\"603801\"]).to.include({ estado: \"Prerrequisito\", prerrequisitoCumplido: true, motivo: \"LIMITE_CREDITOS_EXCEDIDO\" }));",
+                  "pm.test(\"603801 Sugerida (limite 20)\", () => pm.expect(by[\"603801\"]).to.include({ estado: \"Sugerida\", prerrequisitoCumplido: true, motivo: null }));",
                   "pm.test(\"603802 bloqueada por creditos\", () => pm.expect(by[\"603802\"]).to.include({ estado: \"Prerrequisito\", prerrequisitoCumplido: true, motivo: \"LIMITE_CREDITOS_EXCEDIDO\" }));",
                   "pm.test(\"603803 bloqueada por creditos\", () => pm.expect(by[\"603803\"]).to.include({ estado: \"Prerrequisito\", prerrequisitoCumplido: true, motivo: \"LIMITE_CREDITOS_EXCEDIDO\" }));",
                   "pm.test(\"603804 bloqueada por creditos\", () => pm.expect(by[\"603804\"]).to.include({ estado: \"Prerrequisito\", prerrequisitoCumplido: true, motivo: \"LIMITE_CREDITOS_EXCEDIDO\" }));",
@@ -620,7 +620,7 @@
                   "pm.test(\"603802 bloqueada por creditos\", () => pm.expect(by[\"603802\"]).to.include({ estado: \"Prerrequisito\", prerrequisitoCumplido: true, motivo: \"LIMITE_CREDITOS_EXCEDIDO\" }));",
                   "pm.test(\"603803 bloqueada por creditos\", () => pm.expect(by[\"603803\"]).to.include({ estado: \"Prerrequisito\", prerrequisitoCumplido: true, motivo: \"LIMITE_CREDITOS_EXCEDIDO\" }));",
                   "pm.test(\"603804 bloqueada por creditos\", () => pm.expect(by[\"603804\"]).to.include({ estado: \"Prerrequisito\", prerrequisitoCumplido: true, motivo: \"LIMITE_CREDITOS_EXCEDIDO\" }));",
-                  "pm.test(\"603806 Sugerida\", () => pm.expect(by[\"603806\"]).to.include({ estado: \"Sugerida\", prerrequisitoCumplido: true, motivo: null }));",
+                  "pm.test(\"603806 bloqueada por creditos\", () => pm.expect(by[\"603806\"]).to.include({ estado: \"Prerrequisito\", prerrequisitoCumplido: true, motivo: \"LIMITE_CREDITOS_EXCEDIDO\" }));",
                   "pm.test(\"603805 Prerrequisito (prereq false, motivo PREREQUISITO_NO_CUMPLIDO)\", () => pm.expect(by[\"603805\"]).to.include({ estado: \"Prerrequisito\", prerrequisitoCumplido: false, motivo: \"PREREQUISITO_NO_CUMPLIDO\" }));"
                 ]
               }
@@ -647,7 +647,7 @@
                   "pm.test(\"603901 Prerrequisito (prereq false, motivo PREREQUISITO_NO_CUMPLIDO)\", () => pm.expect(by[\"603901\"]).to.include({ estado: \"Prerrequisito\", prerrequisitoCumplido: false, motivo: \"PREREQUISITO_NO_CUMPLIDO\" }));",
                   "pm.test(\"603902 Prerrequisito (prereq true, motivo CRUCE_HORARIO)\", () => pm.expect(by[\"603902\"]).to.include({ estado: \"Prerrequisito\", prerrequisitoCumplido: true, motivo: \"CRUCE_HORARIO\" }));",
                   "pm.test(\"603903 Prerrequisito (prereq true, motivo CUPO_AGOTADO)\", () => pm.expect(by[\"603903\"]).to.include({ estado: \"Prerrequisito\", prerrequisitoCumplido: true, motivo: \"CUPO_AGOTADO\" }));",
-                  "pm.test(\"603904 bloqueada por creditos\", () => pm.expect(by[\"603904\"]).to.include({ estado: \"Prerrequisito\", prerrequisitoCumplido: true, motivo: \"LIMITE_CREDITOS_EXCEDIDO\" }));",
+                  "pm.test(\"603904 Sugerida (limite 20)\", () => pm.expect(by[\"603904\"]).to.include({ estado: \"Sugerida\", prerrequisitoCumplido: true, motivo: null }));",
                   "pm.test(\"603905 bloqueada por creditos\", () => pm.expect(by[\"603905\"]).to.include({ estado: \"Prerrequisito\", prerrequisitoCumplido: true, motivo: \"LIMITE_CREDITOS_EXCEDIDO\" }));"
                 ]
               }

@@ -132,7 +132,7 @@ t "sugerencia con periodo explicito" 200 GET   "/estudiantes/1/sugerencia?period
 t "sugerencia periodo invalido"     400 GET    "/estudiantes/1/sugerencia?periodo=2026-9" "" VALIDACION_FALLIDA
 t "sugerencia est. inexistente"     404 GET    /estudiantes/999/sugerencia "" ESTUDIANTE_NO_ENCONTRADO
 t "sugerencia Mateo (18 creditos)"  200 GET    /estudiantes/2/sugerencia
-ck "Mateo: 603801 LIMITE"           row 603801 Prerrequisito true '"LIMITE_CREDITOS_EXCEDIDO"'
+ck "Mateo: 603801 Sugerida (limite 20)" row 603801 Sugerida true null
 ck "Mateo: 603802 LIMITE"           row 603802 Prerrequisito true '"LIMITE_CREDITOS_EXCEDIDO"'
 ck "Mateo: 603803 LIMITE"           row 603803 Prerrequisito true '"LIMITE_CREDITOS_EXCEDIDO"'
 ck "Mateo: 603804 LIMITE"           row 603804 Prerrequisito true '"LIMITE_CREDITOS_EXCEDIDO"'
@@ -145,13 +145,13 @@ ck "Camila: 603801 LIMITE"          row 603801 Prerrequisito true '"LIMITE_CREDI
 ck "Camila: 603802 LIMITE"          row 603802 Prerrequisito true '"LIMITE_CREDITOS_EXCEDIDO"'
 ck "Camila: 603803 LIMITE"          row 603803 Prerrequisito true '"LIMITE_CREDITOS_EXCEDIDO"'
 ck "Camila: 603804 LIMITE"          row 603804 Prerrequisito true '"LIMITE_CREDITOS_EXCEDIDO"'
-ck "Camila: 603806 Sugerida"        row 603806 Sugerida true null
+ck "Camila: 603806 LIMITE"          row 603806 Prerrequisito true '"LIMITE_CREDITOS_EXCEDIDO"'
 ck "Camila: 603805 prerrequisito"   row 603805 Prerrequisito false '"PREREQUISITO_NO_CUMPLIDO"'
 t "sugerencia Sofia (A3)"           200 GET    /estudiantes/4/sugerencia
 ck "Sofia: 603901 prerrequisito"    row 603901 Prerrequisito false '"PREREQUISITO_NO_CUMPLIDO"'
 ck "Sofia: 603902 CRUCE_HORARIO"    row 603902 Prerrequisito true '"CRUCE_HORARIO"'
 ck "Sofia: 603903 CUPO_AGOTADO"     row 603903 Prerrequisito true '"CUPO_AGOTADO"'
-ck "Sofia: 603904 LIMITE"           row 603904 Prerrequisito true '"LIMITE_CREDITOS_EXCEDIDO"'
+ck "Sofia: 603904 Sugerida (limite 20)" row 603904 Sugerida true null
 ck "Sofia: 603905 LIMITE"           row 603905 Prerrequisito true '"LIMITE_CREDITOS_EXCEDIDO"'
 ck "Sofia: 603801 Sugerida (N)"     row 603801 Sugerida true null
 t "sugerencia Andres omite inscrita" 200 GET   /estudiantes/5/sugerencia "" '"semestreActual":9' '"codigo":"603903"'

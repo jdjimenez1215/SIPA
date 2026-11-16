@@ -4,7 +4,7 @@ Hay **cinco suites**. Cada una valida una capa distinta, así que conviene conoc
 
 | Suite | Qué valida | Necesita | Resultado esperado |
 |---|---|---|---|
-| [Tests unitarios](#1-tests-unitarios) | Reglas de negocio y casos de uso, sin base de datos | .NET SDK | **124/124** (ms) + **27/27** (identity) |
+| [Tests unitarios](#1-tests-unitarios) | Reglas de negocio y casos de uso, sin base de datos | .NET SDK | **125/125** (ms) + **27/27** (identity) |
 | [E2E del backend](#2-e2e-del-backend-e2esh) | Los 21 endpoints de ms-inscripcion contra la API real | Docker | **155/155** |
 | [Colección Postman](#3-colección-postman--newman) | Lo mismo que el E2E, para correr en Postman o CI | Docker + Postman o Node | **300/300** asserts |
 | [Smoke del proxy](#4-smoke-del-proxy) | Que el front llega a **las dos** APIs a través del proxy | Todo levantado | **5/5** |
@@ -145,9 +145,9 @@ El `estudianteId` sale del usuario logueado. Para probar otro estudiante, creá 
 | Id | Estudiante | Qué demuestra |
 |---|---|---|
 | 1 | Laura (sem 6) | Límite de 18 créditos y prerrequisitos estrictos |
-| 2 | Mateo (sem 7) | Toda su N (17 créditos) entra; las de N+1 quedan por límite de créditos |
+| 2 | Mateo (sem 7, promedio 4.0) | Límite de 20: entra toda su N (17) + 603801; el resto de N+1 queda por créditos |
 | 3 | Camila (sem 7) | La **adeudada más antigua** (603305, sem 3) se evalúa primero |
 | 4 | Sofía (sem 8) | Cruce de horario y cupo agotado no gastan créditos |
 | 5 | Andrés (sem 9) | Tiene el único cupo de 603903 |
 
-Un promedio **> 4.0** sube el límite a **20 créditos**; el cálculo usa el promedio de las materias aprobadas.
+Un promedio **de 4.0 o más** sube el límite a **20 créditos**; el cálculo usa el promedio de las materias aprobadas.
