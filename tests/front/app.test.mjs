@@ -41,7 +41,14 @@ async function renderPage() {
   window.sessionStorage.setItem('sipa.auth.estudianteId', '1');
 
   window.fetch = async (url) => {
-    const body = String(url).includes('/inscripciones?') ? inscripciones : sugerencia;
+    const u = String(url);
+    if (u.includes('/asistente/chat')) {
+      return {
+        ok: true, status: 200, headers: { get: () => 'application/json' },
+        text: async () => JSON.stringify({ mensaje: 'Te propongo esta materia.', materiaIds: [27], explicaciones: [], fallback: true, limiteCreditos: 18 })
+      };
+    }
+    const body = u.includes('/inscripciones?') ? inscripciones : sugerencia;
     return {
       ok: true,
       status: 200,
@@ -78,6 +85,13 @@ test('pinta sugerencia, cupos, inscritas y selección por materia', async () => 
   assert.equal(document.getElementById('creditos-seleccionados').textContent, '0');
   assert.equal(document.getElementById('btn-confirmar').disabled, true);
   assert.ok(document.querySelector('#tabla-materias-body tr[data-codigo="603601"]').classList.contains('materia-excluida'));
+
+  document.getElementById('chat-mensaje').value = '¿qué puedo inscribir?';
+  document.getElementById('btn-chat').click();
+  await new Promise(resolve => setTimeout(resolve, 50));
+  assert.equal(document.getElementById('creditos-seleccionados').textContent, '3');
+  assert.ok(document.querySelector('#tabla-materias-body tr[data-codigo="603601"] .materia-check').checked);
+  assert.match(document.getElementById('chat-respuesta').textContent, /Te propongo esta materia/);
 
   dom.window.close();
 });

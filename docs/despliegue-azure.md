@@ -6,12 +6,12 @@ El repo incluye `azure-pipelines.yml`, que ejecuta tests, publica las tres imág
 
 - **Azure Container Registry** (`acrName`).
 - **PostgreSQL Flexible Server** (o el servicio que uses) con las bases `inscripcion` e `identidad`.
-- **Container Apps**: `api`, `identity`, `front` (este último con ingress externo; los otros dos internos).
+- **Container Apps**: `api`, `identity`, `assistant`, `front` (este último con ingress externo; los otros dos internos).
 - **Key Vault** o secretos de Container Apps:
   - `jwt-key` (mínimo 32 bytes, compartido).
   - `connection-strings-default` para api (`Database=inscripcion`) e identity (`Database=identidad`).
 - Service connections de Azure DevOps: `azureServiceConnection` (ARM) y `acrServiceConnection` (Docker Registry).
-- Variable group con `acrName`, `resourceGroup`, `apiApp`, `identityApp`, `frontApp`.
+- Variable group con `acrName`, `resourceGroup`, `apiApp`, `identityApp`, `assistantApp`, `frontApp`.
 
 ## Variables de entorno de Container Apps
 
@@ -36,6 +36,19 @@ ConnectionStrings__Default=<secret>
 Jwt__Issuer=MiniIdentityApi
 Jwt__Audience=MiniIdentityApiUsers
 Jwt__Key=<secret jwt-key>
+```
+
+**assistant**
+
+```
+ASPNETCORE_ENVIRONMENT=Production
+ASPNETCORE_FORWARDEDHEADERS_ENABLED=true
+Inscripcion__BaseUrl=http://api
+Jwt__Issuer=MiniIdentityApi
+Jwt__Audience=MiniIdentityApiUsers
+Jwt__Key=<secret jwt-key>
+GROQ_API_KEY=<secret>            # o ANTHROPIC_API_KEY
+ASISTENTE_MODEL=openai/gpt-oss-20b
 ```
 
 **front**

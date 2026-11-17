@@ -2,7 +2,7 @@
 # Requiere:
 #   - Service connection de Docker al ACR: $(acrServiceConnection)
 #   - Service connection de Azure: $(azureServiceConnection)
-#   - Variable group con: acrName, resourceGroup, apiApp, identityApp, frontApp
+#   - Variable group con: acrName, resourceGroup, apiApp, identityApp, assistantApp, frontApp
 #   - Secretos en Key Vault: JWT_KEY, ConnectionStrings--Default (api e identity)
 
 trigger:
@@ -30,6 +30,7 @@ stages:
             inputs: { packageType: sdk, version: 8.0.x }
           - script: dotnet test backend/ms-inscripcion/tests/MsInscripcion.UnitTests/MsInscripcion.UnitTests.csproj -c Release --nologo
           - script: dotnet test backend/mini-identity-api-dotnet/src/MiniIdentityApi.Tests/MiniIdentityApi.Tests.csproj -c Release --nologo
+          - script: dotnet test backend/ms-asistente/tests/MsAsistente.Tests/MsAsistente.Tests.csproj -c Release --nologo
       - job: Front
         pool: { vmImage: ubuntu-latest }
         steps:
@@ -67,6 +68,15 @@ stages:
               buildContext: backend/mini-identity-api-dotnet
               tags: $(tag)
           - task: Docker@2
+            displayName: assistant
+            inputs:
+              command: buildAndPush
+              containerRegistry: $(acrServiceConnection)
+              repository: sipa-asistente
+              dockerfile: backend/ms-asistente/Dockerfile
+              buildContext: backend/ms-asistente
+              tags: $(tag)
+          - task: Docker@2
             displayName: front
             inputs:
               command: buildAndPush
@@ -96,7 +106,7 @@ stages:
                     inlineScript: |
                       set -euo pipefail
                       ACR=$(az acr show -n $(acrName) --query loginServer -o tsv)
-                      for pair in "api:$(apiApp)" "identity:$(identityApp)" "front:$(frontApp)"; do
+                      for pair in "api:$(apiApp)" "identity:$(identityApp)" "front:$(frontApp)" "asistente:$(assistantApp)"; do
                         repo="${pair%%:*}"; app="${pair##*:}"
                         az containerapp update \
                           --resource-group "$(resourceGroup)" \

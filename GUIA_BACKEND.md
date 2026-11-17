@@ -21,6 +21,7 @@ El token incluye el claim `estudianteId` cuando la cuenta está vinculada a un e
 | `GET /api/estudiantes/{id}/inscripciones?periodo=2026-2` | Inscripciones activas |
 | `POST /api/inscripciones` | `{ estudianteId, periodo, materiaIds[] \| codigosMaterias[] }` |
 | `DELETE /api/inscripciones/{id}` | Cancela (dueño o Admin) |
+| `POST /api/asistente/chat` | Solo estudiante. `{ mensaje, periodo }` → propuesta de `materiaIds`; nunca inscribe |
 
 ### Respuesta de sugerencia
 

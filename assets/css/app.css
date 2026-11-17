@@ -161,6 +161,18 @@ input[type="checkbox"] + label span {
 .violacion { color: #a94442; }
 .badge-violacion { margin-left: 4px; }
 
+.chat-respuesta {
+	margin-top: 12px;
+	padding: 10px 12px;
+	border-radius: 4px;
+	background: #f7f9fc;
+	border: 1px solid #dce3ec;
+	min-height: 20px;
+	white-space: pre-wrap;
+}
+.chat-respuesta.error { background: #f2dede; border-color: #ebccd1; color: #a94442; }
+.chat-respuesta.ok { background: #dff0d8; border-color: #d6e9c6; color: #3c763d; }
+
 /* Casilla personalizada: siempre visible, independiente del tema del navegador. */
 td.col-seleccion { width: 48px; text-align: center; vertical-align: middle; }
 .materia-toggle { position: relative; display: inline-block; margin: 0; cursor: pointer; }

@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/jdjimenez1215/SIPA/actions/workflows/ci.yml/badge.svg)](https://github.com/jdjimenez1215/SIPA/actions/workflows/ci.yml)
 
-Sistema de **sugerencia e inscripción de materias** para Ingeniería de Sistemas (Unillanos). Tiene un front web, una API de identidad (login JWT) y el microservicio de inscripción, que aplica la regla N+3 (semestre N más hasta 3 materias extra), **prioriza las materias más antiguas**, evita cruces de horario, muestra los **cupos disponibles** y respeta un **tope de 18 créditos** (20 si el promedio es 4.0 o más). Cada materia se puede marcar o desmarcar antes de confirmar.
+Sistema de **sugerencia e inscripción de materias** para Ingeniería de Sistemas (Unillanos). Tiene un front web, una API de identidad (login JWT), el microservicio de inscripción y un asistente de IA, que aplica la regla N+3 (semestre N más hasta 3 materias extra), **prioriza las materias más antiguas**, evita cruces de horario, muestra los **cupos disponibles** y respeta un **tope de 18 créditos** (20 si el promedio es 4.0 o más). Cada materia se puede marcar o desmarcar antes de confirmar.
 
 ## Documentación
 
@@ -14,13 +14,14 @@ Sistema de **sugerencia e inscripción de materias** para Ingeniería de Sistema
 | [docs/pruebas.md](docs/pruebas.md) | Cómo correr las suites de prueba y la prueba manual en el navegador |
 | [docs/despliegue-azure.md](docs/despliegue-azure.md) | Pipeline, Container Apps, secretos y variables de producción |
 | [GUIA_BACKEND.md](GUIA_BACKEND.md) | Contrato front ↔ API |
+| [backend/ms-asistente/README.md](backend/ms-asistente/README.md) | Asistente de IA: endpoint, proveedores y fallback |
 | [docs/arquitectura-y-ajustes.md](docs/arquitectura-y-ajustes.md) | Cómo está construido (diagramas), la regla N+3 y los ajustes y bugs corregidos |
 | [backend/ms-inscripcion/README.md](backend/ms-inscripcion/README.md) | Detalle del microservicio: endpoints, configuración, seed y ejemplos curl |
 | [backend/mini-identity-api-dotnet/README.md](backend/mini-identity-api-dotnet/README.md) | API de identidad |
 
 ### Arranque rápido con Docker (recomendado)
 
-Levanta las **cuatro piezas** (PostgreSQL, ms-inscripción, identity y front) con un solo comando:
+Levanta las **cinco piezas** (PostgreSQL, ms-inscripción, identity, asistente y front) con un solo comando:
 
 ```bash
 # 1. Clave de firma JWT compartida (obligatoria; no está en el repo)
@@ -38,15 +39,15 @@ Abrí **http://localhost:5500** y entrá con:
 | Cuenta | Contraseña | Alcance |
 |---|---|---|
 | `admin` | `Admin123*` | Administra usuarios y cualquier estudiante |
-| `laura` | `Laura123*` | Solo sus datos (estudiante 1) |
+| `laura` | `Laura123*` | Solo sus datos (estudiante 1); puede usar el chat de IA |
 
-- Puertos: front `5500`, identity `5132`, API `8080`, PostgreSQL `5432` (todos en `127.0.0.1`).
+- Puertos: front `5500`, identity `5132`, API `8080`, asistente `8083`, PostgreSQL `5432` (todos en `127.0.0.1`).
 - Si venís de una versión anterior, la primera vez usá `docker compose down -v` para crear el rol de BD `sipa_app` y la base `identidad`.
 - Health checks: `http://localhost:8080/ready`, `http://localhost:5132/health`.
 - Detener: `docker compose down`. Reiniciar datos demo: `docker compose down -v`.
 - Si un puerto está ocupado: `API_PORT=8081`, `DB_PORT=5433`, `IDENTITY_PORT=5133`, `FRONT_PORT=5501`.
 
-> También podés guardar la clave en `SIPA/.env` (`JWT_KEY=...`). Ese archivo está en `.gitignore`.
+> También podés guardar las variables en `SIPA/.env` (`JWT_KEY=...`, y opcionalmente `GROQ_API_KEY=...`). Ese archivo está en `.gitignore`. Sin clave de IA, el asistente usa el modo de reglas.
 
 ### Arranque rápido sin Docker (Git Bash)
 
@@ -155,6 +156,7 @@ Si el destino está caído, el proxy responde `502 application/problem+json` (`P
 - **Persistencia**: usuarios y roles se guardan en PostgreSQL (base `identidad`) cuando hay `ConnectionStrings__Default`; sin connection string (tests o demo local) usa memoria.
 - **BD**: la API usa el rol `sipa_app`, no el superusuario `postgres`.
 - **Recuperación de contraseña y consulta de usuario**: deshabilitadas a propósito; los enlaces muestran “no disponible” y no llaman a la red.
+- **IA**: `ms-asistente` lee el `estudianteId` solo del JWT y reenvía el token a ms-inscripción; nunca inscribe. La API key (`GROQ_API_KEY` o `ANTHROPIC_API_KEY`) es un secreto de entorno y el fallback de reglas se activa si falla.
 - **Producción/Azure**: `SWAGGER_ENABLED=false` por defecto; `JWT_KEY`, `POSTGRES_PASSWORD` y `DB_APP_PASSWORD` se leen de variables de entorno (ver `.env.example`). `ASPNETCORE_FORWARDEDHEADERS_ENABLED=true` ya está configurado para el ingress. Ver [docs/despliegue-azure.md](docs/despliegue-azure.md).
 - **Identity con migraciones EF**: al cambiar el modelo ya no se usa `EnsureCreated`; el arranque ejecuta `MigrateAsync`. En local, tras cambios de esquema hacé `docker compose down -v`.
 - **Front**: `dev-server.py` es para desarrollo. Para producción usá un reverse proxy que replique `/api/*` (ver la misma guía).
@@ -175,12 +177,15 @@ Cada fila muestra sus **cupos disponibles / máximos** y una casilla de selecci�
 
 En **Materias inscritas** cada fila tiene un botón **Cancelar** (el estudiante puede cancelar las suyas; Admin cualquiera), que libera el cupo y devuelve la materia a la sugerencia.
 
+Al final hay un **Asistente de matrícula (IA)**: entrá como `laura`, preguntá qué inscribir o por qué una materia está bloqueada. El asistente **solo propone** y pre-marca casillas; la inscripción la confirmás vos y pasa por el motor de reglas. Con `GROQ_API_KEY` usa Groq (`openai/gpt-oss-20b` por defecto); sin clave funciona en **modo reglas** (`fallback=true`). La cuenta Admin no puede usarlo (no tiene `estudianteId`).
+
 ### Verificación
 
 ```bash
-# Tests unitarios (147 ms + 30 identity), sin Docker
+# Tests unitarios (147 ms + 30 identity + 5 asistente), sin Docker
 dotnet test backend/ms-inscripcion/tests/MsInscripcion.UnitTests
 dotnet test backend/mini-identity-api-dotnet/src/MiniIdentityApi.Tests
+dotnet test backend/ms-asistente/tests/MsAsistente.Tests
 
 # Tests del front (jsdom) y del mock
 npm ci
@@ -191,7 +196,7 @@ npm run test:mock
 PORT=8080 bash backend/ms-inscripcion/scripts/e2e.sh
 
 # Smoke vía el proxy (solo lectura/rechazo; no escribe en la BD)
-bash scripts/smoke-proxy.sh              # BASE=http://localhost:5500 por defecto
+bash scripts/smoke-proxy.sh              # BASE=http://localhost:5500 por defecto (7 checks)
 
 # Paridad del mock con el fixture (esperado 36/36)
 node src/pruebas/validar-mocks.mjs

@@ -47,5 +47,12 @@ check "POST inscripciones -> 422 (sin escritura)" 422 'INSCRIPCION_RECHAZADA' -X
 check "GET estudiante inexistente -> 404 problem+json" 404 '"code"' \
   "${AUTHH[@]}" -H 'Accept: application/json' "$BASE/api/estudiantes/999/sugerencia?periodo=2026-2"
 
+# Asistente: usa una cuenta de estudiante (Admin no tiene estudianteId).
+LAURA_TOKEN=$(curl -s -m 15 -X POST "$AUTH/api/auth/login" -H 'Content-Type: application/json' \
+  -d '{"usernameOrEmail":"laura","password":"Laura123*"}' | grep -o '"accessToken":"[^"]*"' | cut -d'"' -f4)
+check "POST /api/asistente/chat (IA)" 200 '"materiaIds"' -X POST "$BASE/api/asistente/chat" \
+  -H "Authorization: Bearer $LAURA_TOKEN" -H 'Content-Type: application/json' \
+  -d '{"mensaje":"¿qué puedo inscribir?","periodo":"2026-2"}'
+
 echo "PASS: $PASS  FAIL: $FAIL  TOTAL: $((PASS+FAIL))"
 [ "$FAIL" -eq 0 ]

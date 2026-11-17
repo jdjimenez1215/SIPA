@@ -34,6 +34,7 @@ DB_PORT            := 5432
 
 FRONTEND_SERVER    := $(ROOT_DIR)/dev-server.py
 FRONTEND_PORT      := 5500
+ASSISTANT_PORT     := 8083
 FRONTEND_PID       := $(RUN_DIR)/frontend.pid
 FRONTEND_LOG       := $(RUN_DIR)/frontend.log
 
@@ -260,6 +261,12 @@ status:
 		printf "%-20s %-12s $(GREEN)%-15s$(RESET) %-30s\n" "PostgreSQL" "$(DB_PORT)/tcp" "RUNNING" "inscripcion (user: postgres)"; \
 	else \
 		printf "%-20s %-12s $(RED)%-15s$(RESET) %-30s\n" "PostgreSQL" "$(DB_PORT)/tcp" "STOPPED" "-"; \
+	fi
+	@# Asistente IA
+	@if (echo > /dev/tcp/127.0.0.1/$(ASSISTANT_PORT)) >/dev/null 2>&1; then \
+		printf "%-20s %-12s $(GREEN)%-15s$(RESET) %-30s\n" "ms-asistente" "$(ASSISTANT_PORT)/http" "RUNNING" "http://localhost:$(ASSISTANT_PORT)/health"; \
+	else \
+		printf "%-20s %-12s $(RED)%-15s$(RESET) %-30s\n" "ms-asistente" "$(ASSISTANT_PORT)/http" "STOPPED" "-"; \
 	fi
 	@# Frontend Dev Server
 	@if (echo > /dev/tcp/127.0.0.1/$(FRONTEND_PORT)) >/dev/null 2>&1; then \

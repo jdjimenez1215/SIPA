@@ -27,6 +27,7 @@ jobs:
             10.0.x
       - run: dotnet test backend/ms-inscripcion/tests/MsInscripcion.UnitTests/MsInscripcion.UnitTests.csproj -c Release --nologo
       - run: dotnet test backend/mini-identity-api-dotnet/src/MiniIdentityApi.Tests/MiniIdentityApi.Tests.csproj -c Release --nologo
+      - run: dotnet test backend/ms-asistente/tests/MsAsistente.Tests/MsAsistente.Tests.csproj -c Release --nologo
 
   front-tests:
     name: Front + mock tests
@@ -54,8 +55,9 @@ jobs:
           for i in $(seq 1 90); do
             api=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/ready || true)
             identity=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:5132/health || true)
+            assistant=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8083/health || true)
             front=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:5500/index.html || true)
-            if [ "$api" = 200 ] && [ "$identity" = 200 ] && [ "$front" = 200 ]; then
+            if [ "$api" = 200 ] && [ "$identity" = 200 ] && [ "$assistant" = 200 ] && [ "$front" = 200 ]; then
               echo "Stack listo"
               exit 0
             fi

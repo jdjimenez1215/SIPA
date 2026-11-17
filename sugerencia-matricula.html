@@ -247,6 +247,31 @@
             </div>
         </div>
     </div>
+
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h4 class="card-title mb-0">Asistente de matrícula (IA)</h4>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">
+                        Preguntá qué materias te conviene inscribir o por qué una materia está bloqueada.
+                        El asistente solo <strong>propone</strong>: pre-marca las casillas y vos confirmás la matrícula.
+                    </p>
+                    <div class="input-group">
+                        <input type="text" id="chat-mensaje" class="form-control"
+                               placeholder="Ej: ¿qué puedo inscribir este semestre?" maxlength="500"
+                               aria-label="Mensaje para el asistente">
+                        <span class="input-group-btn">
+                            <button type="button" id="btn-chat" class="btn btn-primary">Preguntar</button>
+                        </span>
+                    </div>
+                    <div id="chat-respuesta" class="chat-respuesta" aria-live="polite"></div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
             </div>
         </div>

@@ -4,11 +4,11 @@ Hay **seis suites**. Cada una valida una capa distinta, así que conviene conoce
 
 | Suite | Qué valida | Necesita | Resultado esperado |
 |---|---|---|---|
-| [Tests unitarios](#1-tests-unitarios) | Reglas de negocio y casos de uso, sin base de datos | .NET SDK | **147/147** (ms) + **30/30** (identity) |
+| [Tests unitarios](#1-tests-unitarios) | Reglas de negocio y casos de uso, sin base de datos | .NET SDK | **147/147** (ms) + **30/30** (identity) + **5/5** (asistente) |
 | [Front (jsdom)](#0-tests-del-front) | Render de sugerencia, cupos, selección y botón cancelar | Node + npm | **1/1** |
 | [E2E del backend](#2-e2e-del-backend-e2esh) | Los 21 endpoints de ms-inscripcion contra la API real | Docker | **159/159** |
 | [Colección Postman](#3-colección-postman--newman) | Lo mismo que el E2E, para correr en Postman o CI | Docker + Postman o Node | **301/301** asserts |
-| [Smoke del proxy](#4-smoke-del-proxy) | Que el front llega a **las dos** APIs a través del proxy | Todo levantado | **6/6** |
+| [Smoke del proxy](#4-smoke-del-proxy) | Que el front llega a **las tres** APIs a través del proxy | Todo levantado | **7/7** |
 | [Validación del mock](#5-validación-del-mock) | Que el mock del front respeta la regla N+3 | Node | **36/36** |
 
 Y al final, una [prueba manual en el navegador](#6-prueba-manual-en-el-navegador).
@@ -52,6 +52,8 @@ No necesitan base de datos ni Docker.
 ```bash
 cd backend/ms-inscripcion
 dotnet test
+dotnet test ../mini-identity-api-dotnet/src/MiniIdentityApi.Tests
+dotnet test ../ms-asistente/tests/MsAsistente.Tests
 ```
 
 Cubren cada regla (caso válido y caso de falla), el motor que junta todas las violaciones, el cálculo de la sugerencia (tope de 3, adeudadas, materias bloqueadas que no ocupan lugar), los datos semilla y los handlers con Moq.
@@ -151,7 +153,8 @@ Con la base limpia y los tres servicios arriba:
 | 5 | Resetea la base. Cargá la página **y después** inscribí 603601 por fuera:<br>`curl -X POST http://localhost:8081/api/inscripciones -H 'Content-Type: application/json' -d '{"estudianteId":1,"periodo":"2026-2","codigosMaterias":["603601"]}'`<br>Ahora tocá **Confirmar** | La fila 603601 se marca en rojo con el mensaje de la API (`MATERIA_YA_INSCRITA`) y aparece la alerta "No se inscribió ninguna asignatura". La inscripción es **todo o nada** |
 | 6 | Pará ms-inscripcion (`docker compose stop api`) y recargá | Alerta con el error 502 del proxy |
 | 7 | Poné `useMock: true` en `assets/js/app.js` y recargá | La tabla muestra el mock (también 18 créditos), sin backend |
-| 8 | Abrí http://localhost:5500/index.html en una ventana privada y probá una clave incorrecta | No entra: identity responde **401** `CREDENCIALES_INVALIDAS`. **Cerrar Sesión** limpia la sesión y vuelve al login del proyecto |
+| 8 | Cerrá sesión, entrá como `laura` y preguntá en el chat: “¿qué puedo inscribir?” | El asistente responde, pre-marca casillas y muestra `fallback` si no hay API key |
+| 9 | Abrí http://localhost:5500/index.html en una ventana privada y probá una clave incorrecta | No entra: identity responde **401** `CREDENCIALES_INVALIDAS`. **Cerrar Sesión** limpia la sesión y vuelve al login del proyecto |
 
 ### Otros estudiantes para probar la regla
 

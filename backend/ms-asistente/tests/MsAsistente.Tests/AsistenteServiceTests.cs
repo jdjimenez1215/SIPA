@@ -1,0 +1,94 @@
+using FluentAssertions;
+using Microsoft.Extensions.Logging.Abstractions;
+using MsAsistente.Api;
+using Xunit;
+
+namespace MsAsistente.Tests;
+
+public class AsistenteServiceTests
+{
+    private static MateriaSugerida Materia(int id, int creditos, int semestre, string estado = "Sugerida", string? motivo = null) =>
+        new(id, $"M{id}", $"Materia {id}", creditos, semestre, estado, motivo is null, motivo, 30, 30);
+
+    private static SugerenciaDto Sugerencia(params MateriaSugerida[] materias) => new(
+        "Laura", "Ingeniería de Sistemas", 6, "2026-2", 18, 3.8m, 18, materias);
+
+    private sealed class FakeLlm(Func<LlmPropuesta> response) : IAsistenteLlm
+    {
+        public Task<LlmPropuesta> ProponerAsync(AsistenteContexto contexto, CancellationToken ct = default) =>
+            Task.FromResult(response());
+    }
+
+    private sealed class ThrowingLlm : IAsistenteLlm
+    {
+        public Task<LlmPropuesta> ProponerAsync(AsistenteContexto contexto, CancellationToken ct = default) =>
+            throw new HttpRequestException("LLM down");
+    }
+
+    [Fact]
+    public async Task UsesLlmProposal_AndFiltersIdsNotInSuggestion()
+    {
+        var service = new AsistenteService(
+            new FakeLlm(() => new LlmPropuesta("Listo", [1, 999, 2])), NullLogger<AsistenteService>.Instance);
+        var sugerencia = Sugerencia(Materia(1, 3, 6), Materia(2, 3, 7));
+
+        var result = await service.ResponderAsync(sugerencia, "qué matriculo", default);
+
+        result.MateriaIds.Should().Equal(1, 2);
+        result.Fallback.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task RespectsCreditLimit()
+    {
+        var service = new AsistenteService(
+            new FakeLlm(() => new LlmPropuesta("Listo", [1, 2, 3])), NullLogger<AsistenteService>.Instance);
+        var sugerencia = Sugerencia(Materia(1, 10, 6), Materia(2, 10, 6), Materia(3, 3, 6));
+
+        var result = await service.ResponderAsync(sugerencia, "qué matriculo", default);
+
+        result.MateriaIds.Should().Equal(1, 3);
+    }
+
+    [Fact]
+    public async Task FallsBackWhenLlmFails()
+    {
+        var service = new AsistenteService(new ThrowingLlm(), NullLogger<AsistenteService>.Instance);
+        var sugerencia = Sugerencia(Materia(1, 3, 6), Materia(2, 10, 6), Materia(3, 3, 7));
+
+        var result = await service.ResponderAsync(sugerencia, "qué matriculo", default);
+
+        result.Fallback.Should().BeTrue();
+        result.MateriaIds.Should().Equal(1, 2, 3);
+    }
+
+    [Fact]
+    public async Task ExplainsBlockedSubjects()
+    {
+        var service = new AsistenteService(
+            new FakeLlm(() => new LlmPropuesta("Listo", [1])), NullLogger<AsistenteService>.Instance);
+        var sugerencia = Sugerencia(
+            Materia(1, 3, 6),
+            Materia(2, 3, 7, "Prerrequisito", "PREREQUISITO_NO_CUMPLIDO"),
+            Materia(3, 3, 7, "Prerrequisito", "CUPO_AGOTADO"));
+
+        var result = await service.ResponderAsync(sugerencia, "por qué no puedo", default);
+
+        result.Explicaciones.Should().HaveCount(2);
+        result.Explicaciones.Should().Contain(e => e.Codigo == "M2" && e.Mensaje.Contains("prerrequisito"));
+        result.Explicaciones.Should().Contain(e => e.Codigo == "M3" && e.Mensaje.Contains("cupos"));
+    }
+
+    [Fact]
+    public async Task EmptyLlmProposal_UsesRulesFallback()
+    {
+        var service = new AsistenteService(
+            new FakeLlm(() => new LlmPropuesta("", [])), NullLogger<AsistenteService>.Instance);
+        var sugerencia = Sugerencia(Materia(1, 3, 6), Materia(2, 4, 6));
+
+        var result = await service.ResponderAsync(sugerencia, "qué matriculo", default);
+
+        result.Fallback.Should().BeTrue();
+        result.MateriaIds.Should().Equal(1, 2);
+    }
+}

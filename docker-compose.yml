@@ -78,6 +78,34 @@ services:
       start_period: 20s
     restart: unless-stopped
 
+  assistant:
+    build:
+      context: ./backend/ms-asistente
+    depends_on:
+      api:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_FORWARDEDHEADERS_ENABLED: "true"
+      Jwt__Issuer: "MiniIdentityApi"
+      Jwt__Audience: "MiniIdentityApiUsers"
+      Jwt__Key: "${JWT_KEY:?Define JWT_KEY (openssl rand -base64 48) antes de levantar el stack}"
+      Inscripcion__BaseUrl: "http://api:8080"
+      ANTHROPIC_API_KEY: "${ANTHROPIC_API_KEY:-}"
+      GROQ_API_KEY: "${GROQ_API_KEY:-}"
+      ASISTENTE_MODEL: "${ASISTENTE_MODEL:-openai/gpt-oss-20b}"
+      Groq__Model: "${ASISTENTE_MODEL:-openai/gpt-oss-20b}"
+      Anthropic__Model: "${ANTHROPIC_MODEL:-claude-3-5-haiku-latest}"
+    ports:
+      - "127.0.0.1:${ASSISTANT_PORT:-8083}:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/8080'"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    restart: unless-stopped
+
   front:
     build:
       context: .
@@ -87,9 +115,12 @@ services:
         condition: service_healthy
       api:
         condition: service_healthy
+      assistant:
+        condition: service_healthy
     environment:
       AUTH_ORIGIN: http://identity:8080
       ENROLLMENT_ORIGIN: http://api:8080
+      ASSISTANT_ORIGIN: http://assistant:8080
       HOST: 0.0.0.0
       PORT: "5500"
     ports:

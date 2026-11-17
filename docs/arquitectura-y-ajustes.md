@@ -6,14 +6,17 @@ Documento corto para entender **cómo está armado SIPA** y **qué se cambió** 
 
 ## 1. Cómo está construido
 
-SIPA tiene tres piezas. El navegador solo habla con **una**: el `dev-server.py`, que sirve el front y hace de *proxy* hacia las dos APIs. Por eso no hace falta CORS.
+SIPA tiene cinco piezas. El navegador solo habla con **una**: el `dev-server.py`, que sirve el front y hace de *proxy* hacia identity, ms-inscripcion y el asistente. Por eso no hace falta CORS.
 
 ```mermaid
 flowchart LR
     B[Navegador] -->|"http://localhost:5500"| P["dev-server.py<br/>(front estático + proxy)"]
     P -->|"/api/auth, /users, /roles, /demo"| I["mini-identity-api<br/>.NET · :5132<br/>login JWT"]
+    P -->|"/api/asistente/*"| A["ms-asistente<br/>.NET 10 · :8083<br/>IA / fallback"]
     P -->|"resto de /api/*"| M["ms-inscripcion<br/>.NET 8 · :8080 / :8081"]
+    A -->|"Bearer del estudiante"| M
     M --> DB[("PostgreSQL 16<br/>Docker")]
+    I --> IDB[("PostgreSQL<br/>identidad")]
 ```
 
 | Pieza | Tecnología | Para qué sirve |
@@ -22,6 +25,7 @@ flowchart LR
 | **Proxy** (`dev-server.py`) | Python (stdlib) | Sirve el front y reenvía cada `/api/*` a la API que corresponde |
 | **Identity** (`backend/mini-identity-api-dotnet`) | .NET, EF Core + PostgreSQL (memoria si no hay connection string) | Login, usuarios/roles y emisión del token JWT |
 | **ms-inscripcion** (`backend/ms-inscripcion`) | .NET 8, EF Core, PostgreSQL | Reglas de inscripción, sugerencia de materias, catálogo |
+| **ms-asistente** (`backend/ms-asistente`) | .NET 10, Groq/Anthropic opcional | Chat que propone materias y explica bloqueos; nunca inscribe |
 
 ### ms-inscripcion por dentro (Clean Architecture)
 

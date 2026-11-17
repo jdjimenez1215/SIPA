@@ -144,6 +144,15 @@ const MatriculaApi = {
     return this._request('GET', API_CONFIG.endpoints.sugerencia(estudianteId, periodo));
   },
 
+  /** POST /api/asistente/chat — el backend usa el estudianteId del JWT. */
+  async chatAsistente(mensaje) {
+    if (API_CONFIG.useMock) return { ok: false, status: 0, body: null };
+    return this._request('POST', '/api/asistente/chat', {
+      mensaje,
+      periodo: API_CONFIG.periodo
+    });
+  },
+
   /** DELETE /api/inscripciones/{id} (estudiante dueño o Admin). */
   async cancelarInscripcion(id) {
     return this._request('DELETE', `/api/inscripciones/${id}`);
@@ -218,6 +227,9 @@ const UIManager = {
       limiteCreditos:      document.getElementById('limite-creditos'),
       promedioEstudiante:  document.getElementById('promedio-estudiante'),
       creditosSeleccionados: document.getElementById('creditos-seleccionados'),
+      chatMensaje:         document.getElementById('chat-mensaje'),
+      btnChat:             document.getElementById('btn-chat'),
+      chatRespuesta:       document.getElementById('chat-respuesta'),
       btnConfirmar:        document.getElementById('btn-confirmar'),
       alertContainer:      document.getElementById('alert-container'),
       navFechaHoraTxt:     document.getElementById('navFechaHoraTxt'),
@@ -441,6 +453,22 @@ const UIManager = {
     return total;
   },
 
+  /** Mensaje del asistente en el panel de chat. */
+  mostrarChat(mensaje, tipo) {
+    if (!this.el.chatRespuesta) return;
+    this.el.chatRespuesta.textContent = mensaje;
+    this.el.chatRespuesta.className = 'chat-respuesta' + (tipo ? ` ${tipo}` : '');
+  },
+
+  /** Pre-marca solo las materias propuestas por la IA (no inscribe nada). */
+  aplicarPropuesta(ids) {
+    const set = new Set((ids || []).map(String));
+    document.querySelectorAll('#tabla-materias-body .materia-check').forEach(check => {
+      const key = check.getAttribute('data-id') || check.getAttribute('data-codigo');
+      check.checked = set.has(String(key));
+    });
+  },
+
   /** Límite de créditos del período y promedio del estudiante. */
   renderLimiteCreditos(limite, promedio) {
     if (this.el.limiteCreditos) {
@@ -620,6 +648,51 @@ const App = {
     await this.cargarInscripciones();
   },
 
+  /** Pregunta al asistente y pre-marca las materias que propone. */
+  async preguntarAsistente() {
+    const input = UIManager.el.chatMensaje;
+    const boton = UIManager.el.btnChat;
+    const mensaje = (input && input.value || '').trim();
+    if (!mensaje) {
+      UIManager.mostrarChat('Escribí una pregunta para el asistente.', 'error');
+      return;
+    }
+
+    if (boton) boton.disabled = true;
+    UIManager.mostrarChat('Consultando…');
+    try {
+      const resultado = await MatriculaApi.chatAsistente(mensaje);
+      if (resultado.status === 401) {
+        window.location.replace('index.html');
+        return;
+      }
+      if (resultado.status === 200 && resultado.body) {
+        const texto = resultado.body.mensaje || 'Revisá las materias propuestas.';
+        UIManager.mostrarChat(
+          texto + (resultado.body.fallback ? ' (modo reglas: IA no disponible)' : ''),
+          'ok');
+        UIManager.aplicarPropuesta(resultado.body.materiaIds || []);
+        this.actualizarSeleccion();
+        const explicaciones = Array.isArray(resultado.body.explicaciones) ? resultado.body.explicaciones : [];
+        if (explicaciones.length > 0) {
+          UIManager.mostrarChat(
+            texto + '\n\n' + explicaciones.map(e => `• ${e.codigo}: ${e.mensaje}`).join('\n'),
+            'ok');
+        }
+      } else if (resultado.status === 403) {
+        UIManager.mostrarChat(
+          'El asistente solo está disponible para cuentas de estudiante (no para Admin).',
+          'error');
+      } else {
+        UIManager.mostrarChat(
+          'El asistente no está disponible ahora. Podés seleccionar las materias manualmente.',
+          'error');
+      }
+    } finally {
+      if (boton) boton.disabled = false;
+    }
+  },
+
   /** Cancela una inscripción y refresca sugerencia + inscritas (libera cupo). */
   async cancelarInscripcion(id, boton) {
     const fila = boton ? boton.closest('tr') : null;
@@ -747,6 +820,18 @@ const App = {
       inscritasBody.addEventListener('click', evento => {
         const boton = evento.target.closest('.btn-cancelar-inscripcion');
         if (boton) this.cancelarInscripcion(Number(boton.getAttribute('data-id')), boton);
+      });
+    }
+
+    if (UIManager.el.btnChat) {
+      UIManager.el.btnChat.addEventListener('click', () => this.preguntarAsistente());
+    }
+    if (UIManager.el.chatMensaje) {
+      UIManager.el.chatMensaje.addEventListener('keydown', evento => {
+        if (evento.key === 'Enter') {
+          evento.preventDefault();
+          this.preguntarAsistente();
+        }
       });
     }
 
