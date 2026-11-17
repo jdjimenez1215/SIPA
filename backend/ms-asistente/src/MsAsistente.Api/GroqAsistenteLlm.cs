@@ -30,6 +30,7 @@ public sealed class GroqAsistenteLlm(HttpClient http, IConfiguration configurati
             - No superes limiteCreditos.
             - Priorizá las materias de semestres más antiguos (ya vienen ordenadas).
             - No propongas materias bloqueadas.
+            - Si el estudiante dice que no quiere ciertos días, no propongas materias con horario en esos días.
             Respondé SOLO JSON, sin markdown, con la forma {"mensaje":"texto breve en español","materiaIds":[1,2]}.
             """;
 
@@ -42,7 +43,8 @@ public sealed class GroqAsistenteLlm(HttpClient http, IConfiguration configurati
             contexto.MensajeEstudiante,
             sugeridas = contexto.Sugeridas.Select(m => new
             {
-                m.Id, m.Codigo, m.Nombre, m.Creditos, m.Semestre, m.CuposDisponibles
+                m.Id, m.Codigo, m.Nombre, m.Creditos, m.Semestre, m.CuposDisponibles,
+                horarios = m.Horarios
             }),
             bloqueadas = contexto.Bloqueadas.Select(m => new
             {

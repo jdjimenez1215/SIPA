@@ -1,3 +1,4 @@
+using MsInscripcion.Application.Features.Horarios.Dtos;
 using MsInscripcion.Domain.Enums;
 
 namespace MsInscripcion.Application.Features.Sugerencia.Dtos;
@@ -25,7 +26,8 @@ public sealed record MateriaSugeridaDto(
     bool PrerrequisitoCumplido,
     string? Motivo,
     int CuposDisponibles,
-    int CuposMaximos);
+    int CuposMaximos,
+    IReadOnlyList<HorarioDto> Horarios);
 
 public sealed record NotificacionDto(
     int Id,

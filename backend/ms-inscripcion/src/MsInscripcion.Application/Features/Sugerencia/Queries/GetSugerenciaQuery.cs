@@ -5,6 +5,7 @@ using MsInscripcion.Application.Abstractions.Persistence;
 using MsInscripcion.Application.Common;
 using MsInscripcion.Application.Common.Exceptions;
 using MsInscripcion.Application.Common.Options;
+using MsInscripcion.Application.Features.Horarios.Dtos;
 using MsInscripcion.Application.Features.Sugerencia.Dtos;
 using MsInscripcion.Domain.Enums;
 using MsInscripcion.Domain.Rules;
@@ -62,7 +63,12 @@ public sealed class GetSugerenciaQueryHandler(
                 r.PrerrequisitoCumplido,
                 r.Motivo,
                 r.CuposDisponibles,
-                r.Materia.CuposMaximos))
+                r.Materia.CuposMaximos,
+                r.Materia.Horarios
+                    .OrderBy(h => h.DiaSemana)
+                    .ThenBy(h => h.HoraInicio)
+                    .Select(h => h.ToDto())
+                    .ToList()))
             .ToList();
 
         var totalCreditos = sugeridas.Where(s => s.Estado == EstadoSugerencia.Sugerida).Sum(s => s.Creditos);

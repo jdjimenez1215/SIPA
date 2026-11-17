@@ -4,7 +4,7 @@ Hay **seis suites**. Cada una valida una capa distinta, así que conviene conoce
 
 | Suite | Qué valida | Necesita | Resultado esperado |
 |---|---|---|---|
-| [Tests unitarios](#1-tests-unitarios) | Reglas de negocio y casos de uso, sin base de datos | .NET SDK | **147/147** (ms) + **30/30** (identity) + **5/5** (asistente) |
+| [Tests unitarios](#1-tests-unitarios) | Reglas de negocio y casos de uso, sin base de datos | .NET SDK | **147/147** (ms) + **30/30** (identity) + **7/7** (asistente) |
 | [Front (jsdom)](#0-tests-del-front) | Render de sugerencia, cupos, selección y botón cancelar | Node + npm | **1/1** |
 | [E2E del backend](#2-e2e-del-backend-e2esh) | Los 21 endpoints de ms-inscripcion contra la API real | Docker | **159/159** |
 | [Colección Postman](#3-colección-postman--newman) | Lo mismo que el E2E, para correr en Postman o CI | Docker + Postman o Node | **301/301** asserts |

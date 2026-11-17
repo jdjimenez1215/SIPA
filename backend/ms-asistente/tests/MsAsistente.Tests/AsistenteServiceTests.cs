@@ -7,8 +7,11 @@ namespace MsAsistente.Tests;
 
 public class AsistenteServiceTests
 {
-    private static MateriaSugerida Materia(int id, int creditos, int semestre, string estado = "Sugerida", string? motivo = null) =>
-        new(id, $"M{id}", $"Materia {id}", creditos, semestre, estado, motivo is null, motivo, 30, 30);
+    private static MateriaSugerida Materia(
+        int id, int creditos, int semestre, string estado = "Sugerida", string? motivo = null,
+        params string[] dias) =>
+        new(id, $"M{id}", $"Materia {id}", creditos, semestre, estado, motivo is null, motivo, 30, 30,
+            dias.Select(d => new HorarioDto(d, "14:00", "16:00")).ToList());
 
     private static SugerenciaDto Sugerencia(params MateriaSugerida[] materias) => new(
         "Laura", "Ingeniería de Sistemas", 6, "2026-2", 18, 3.8m, 18, materias);
@@ -77,6 +80,34 @@ public class AsistenteServiceTests
         result.Explicaciones.Should().HaveCount(2);
         result.Explicaciones.Should().Contain(e => e.Codigo == "M2" && e.Mensaje.Contains("prerrequisito"));
         result.Explicaciones.Should().Contain(e => e.Codigo == "M3" && e.Mensaje.Contains("cupos"));
+    }
+
+    [Fact]
+    public async Task ExcludesSubjectsOnDaysTheStudentDoesNotWant()
+    {
+        var service = new AsistenteService(
+            new FakeLlm(() => new LlmPropuesta("Listo", [1, 2])), NullLogger<AsistenteService>.Instance);
+        var sugerencia = Sugerencia(
+            Materia(1, 3, 6, dias: "Lunes"),
+            Materia(2, 3, 6, dias: "Martes"));
+
+        var result = await service.ResponderAsync(sugerencia, "no quiero estudiar los lunes", default);
+
+        result.MateriaIds.Should().Equal(2);
+        result.Mensaje.Should().Contain("Excluí Lunes");
+    }
+
+    [Fact]
+    public async Task ReturnsNoSubjectsWhenAllRemainingAreOnExcludedDays()
+    {
+        var service = new AsistenteService(
+            new FakeLlm(() => new LlmPropuesta("Listo", [1])), NullLogger<AsistenteService>.Instance);
+        var sugerencia = Sugerencia(Materia(1, 3, 6, dias: "Lunes"));
+
+        var result = await service.ResponderAsync(sugerencia, "no puedo los lunes", default);
+
+        result.MateriaIds.Should().BeEmpty();
+        result.Mensaje.Should().Contain("no quedan materias");
     }
 
     [Fact]

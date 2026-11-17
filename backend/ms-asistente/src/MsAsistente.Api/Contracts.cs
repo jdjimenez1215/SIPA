@@ -14,6 +14,8 @@ public sealed record AsistenteRespuesta(
     bool Fallback,
     int LimiteCreditos);
 
+public sealed record HorarioDto(string DiaSemana, string HoraInicio, string HoraFin);
+
 public sealed record MateriaSugerida(
     int Id,
     string Codigo,
@@ -24,7 +26,8 @@ public sealed record MateriaSugerida(
     bool PrerrequisitoCumplido,
     string? Motivo,
     int CuposDisponibles,
-    int CuposMaximos);
+    int CuposMaximos,
+    IReadOnlyList<HorarioDto>? Horarios = null);
 
 public sealed record SugerenciaDto(
     string NombreEstudiante,

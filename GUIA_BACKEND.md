@@ -45,7 +45,10 @@ El token incluye el claim `estudianteId` cuando la cuenta está vinculada a un e
       "prerrequisitoCumplido": true,
       "motivo": null,
       "cuposDisponibles": 30,
-      "cuposMaximos": 30
+      "cuposMaximos": 30,
+      "horarios": [
+        { "diaSemana": "Lunes", "horaInicio": "14:00", "horaFin": "16:00" }
+      ]
     }
   ],
   "notificaciones": []

@@ -1,3 +1,6 @@
+using System.Globalization;
+using System.Text;
+
 namespace MsAsistente.Api;
 
 public sealed class AsistenteService(IAsistenteLlm llm, ILogger<AsistenteService> logger)
@@ -11,12 +14,28 @@ public sealed class AsistenteService(IAsistenteLlm llm, ILogger<AsistenteService
             .Where(m => !string.Equals(m.Estado, "Sugerida", StringComparison.OrdinalIgnoreCase))
             .ToList();
 
+        var (sugeridasFiltradas, diasExcluidos) = FiltrarPorDias(sugeridas, mensaje);
+        var notaDias = diasExcluidos.Count > 0
+            ? $" Excluí {string.Join(", ", diasExcluidos)} según tu preferencia."
+            : string.Empty;
+
+        var explicaciones = bloqueadas
+            .Select(m => new ExplicacionDto(m.Codigo, m.Motivo ?? "BLOQUEADA", Explicar(m)))
+            .ToList();
+
+        if (sugeridasFiltradas.Count == 0 && diasExcluidos.Count > 0)
+        {
+            return new AsistenteRespuesta(
+                "Con los días que pediste no quedan materias sugeridas que puedas inscribir." + notaDias,
+                [], explicaciones, false, sugerencia.LimiteCreditos);
+        }
+
         var contexto = new AsistenteContexto(
             sugerencia.NombreEstudiante,
             sugerencia.SemestreActual,
             sugerencia.Promedio,
             sugerencia.LimiteCreditos,
-            sugeridas,
+            sugeridasFiltradas,
             bloqueadas,
             mensaje ?? string.Empty);
 
@@ -33,22 +52,19 @@ public sealed class AsistenteService(IAsistenteLlm llm, ILogger<AsistenteService
             fallback = true;
         }
 
-        var ids = Sanear(propuesta.MateriaIds, sugeridas, sugerencia.LimiteCreditos);
-        if (ids.Count == 0 && sugeridas.Count > 0)
+        var ids = Sanear(propuesta.MateriaIds, sugeridasFiltradas, sugerencia.LimiteCreditos);
+        if (ids.Count == 0 && sugeridasFiltradas.Count > 0)
         {
             var reglas = await new ReglasAsistenteLlm().ProponerAsync(contexto, ct);
-            ids = Sanear(reglas.MateriaIds, sugeridas, sugerencia.LimiteCreditos);
+            ids = Sanear(reglas.MateriaIds, sugeridasFiltradas, sugerencia.LimiteCreditos);
             propuesta = reglas;
             fallback = true;
         }
 
-        var explicaciones = bloqueadas
-            .Select(m => new ExplicacionDto(m.Codigo, m.Motivo ?? "BLOQUEADA", Explicar(m)))
-            .ToList();
-
         var texto = string.IsNullOrWhiteSpace(propuesta.Mensaje)
             ? "Revisá las materias propuestas y confirmá la matrícula."
             : propuesta.Mensaje;
+        texto += notaDias;
 
         return new AsistenteRespuesta(texto, ids, explicaciones, fallback, sugerencia.LimiteCreditos);
     }
@@ -71,6 +87,50 @@ public sealed class AsistenteService(IAsistenteLlm llm, ILogger<AsistenteService
             creditos += materia.Creditos;
         }
         return ids;
+    }
+
+    private static readonly (string Key, string Label)[] DayNames =
+    [
+        ("lunes", "Lunes"), ("martes", "Martes"), ("miercoles", "Miércoles"),
+        ("jueves", "Jueves"), ("viernes", "Viernes"), ("sabado", "Sábado"), ("domingo", "Domingo")
+    ];
+
+    /// <summary>If the student says "no quiero/no puedo ... lunes", drop subjects with a block that day.</summary>
+    private static (List<MateriaSugerida> Materias, List<string> Dias) FiltrarPorDias(
+        IReadOnlyList<MateriaSugerida> sugeridas, string mensaje)
+    {
+        var normalized = Normalize(mensaje ?? string.Empty);
+        var negative = normalized.Contains("no quiero") || normalized.Contains("no puedo")
+                       || normalized.Contains("no deseo") || normalized.Contains("evitar")
+                       || normalized.Contains("sin clases") || normalized.Contains("no estudiar");
+        if (!negative)
+            return (sugeridas.ToList(), []);
+
+        var excluded = DayNames
+            .Where(day => normalized.Contains(day.Key))
+            .Select(day => day.Key)
+            .ToHashSet();
+        if (excluded.Count == 0)
+            return (sugeridas.ToList(), []);
+
+        var filtered = sugeridas
+            .Where(m => !(m.Horarios ?? []).Any(h => excluded.Contains(Normalize(h.DiaSemana))))
+            .ToList();
+
+        var labels = DayNames.Where(d => excluded.Contains(d.Key)).Select(d => d.Label).ToList();
+        return (filtered, labels);
+    }
+
+    private static string Normalize(string value)
+    {
+        var decomposed = value.Normalize(NormalizationForm.FormD);
+        var builder = new StringBuilder(decomposed.Length);
+        foreach (var c in decomposed)
+        {
+            if (CharUnicodeInfo.GetUnicodeCategory(c) != UnicodeCategory.NonSpacingMark)
+                builder.Append(char.ToLowerInvariant(c));
+        }
+        return builder.ToString();
     }
 
     private static string Explicar(MateriaSugerida materia) => materia.Motivo switch
