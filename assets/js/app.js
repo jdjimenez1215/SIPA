@@ -219,7 +219,8 @@ const UIManager = {
     this.el = {
       userNombre:          document.getElementById('user-nombre'),
       userPrograma:        document.getElementById('user-programa'),
-      tablaBody:           document.getElementById('tabla-materias-body'),
+      tablaDisponiblesBody: document.getElementById('tabla-disponibles-body'),
+      tablaNoDisponiblesBody: document.getElementById('tabla-no-disponibles-body'),
       tablaInscritasBody:  document.getElementById('tabla-inscritas-body'),
       totalInscritos:      document.getElementById('total-creditos-inscritos'),
       periodoInscritas:    document.getElementById('periodo-inscritas'),
@@ -253,54 +254,79 @@ const UIManager = {
   /* ---------- Estado de carga ---------- */
   setCargando() {
     this.setBotonConfirmar({ habilitado: false });
-    const tbody = this.el.tablaBody;
-    if (!tbody) return;
-    tbody.textContent = '';
-    const fila = document.createElement('tr');
-    const celda = document.createElement('td');
-    celda.colSpan = 7;
-    celda.className = 'text-center text-muted';
-    celda.textContent = 'Cargando…';
-    fila.appendChild(celda);
-    tbody.appendChild(fila);
-  },
-
-  vaciarTabla() {
-    if (this.el.tablaBody) this.el.tablaBody.textContent = '';
-  },
-
-  /* ---------- Tabla de materias sugeridas ---------- */
-  renderMaterias(materias) {
-    const tbody = this.el.tablaBody;
-    if (!tbody) return;
-    tbody.textContent = '';                       // limpia filas anteriores
-
-    if (!Array.isArray(materias) || materias.length === 0) {
+    this._tbodies().forEach(tbody => {
+      tbody.textContent = '';
       const fila = document.createElement('tr');
       const celda = document.createElement('td');
       celda.colSpan = 7;
       celda.className = 'text-center text-muted';
-      celda.textContent = 'No hay asignaturas sugeridas para este periodo.';
+      celda.textContent = 'Cargando…';
       fila.appendChild(celda);
       tbody.appendChild(fila);
+    });
+  },
+
+  vaciarTabla() {
+    this._tbodies().forEach(tbody => { tbody.textContent = ''; });
+  },
+
+  _tbodies() {
+    return [this.el.tablaDisponiblesBody, this.el.tablaNoDisponiblesBody].filter(Boolean);
+  },
+
+  _filaVacia(tbody, mensaje) {
+    const fila = document.createElement('tr');
+    const celda = document.createElement('td');
+    celda.colSpan = 7;
+    celda.className = 'text-center text-muted';
+    celda.textContent = mensaje;
+    fila.appendChild(celda);
+    tbody.appendChild(fila);
+  },
+
+  /* ---------- Tablas: disponibles y no disponibles ---------- */
+  renderMaterias(materias) {
+    const disponiblesBody = this.el.tablaDisponiblesBody;
+    const bloqueadasBody = this.el.tablaNoDisponiblesBody;
+    if (!disponiblesBody || !bloqueadasBody) return;
+
+    disponiblesBody.textContent = '';
+    bloqueadasBody.textContent = '';
+
+    const lista = Array.isArray(materias) ? materias : [];
+    if (lista.length === 0) {
+      this._filaVacia(disponiblesBody, 'No hay asignaturas sugeridas para este periodo.');
+      this._filaVacia(bloqueadasBody, 'No hay materias bloqueadas.');
       return;
     }
 
-    materias.forEach(materia => {
-      const bloqueada = materia.estado !== 'Sugerida';
+    let disponibles = 0;
+    let noDisponibles = 0;
+
+    lista.forEach(materia => {
+      const esSugerida = materia.estado === 'Sugerida';
+      // Bloqueada solo por créditos/cupo extra: sí es una materia que el estudiante
+      // podría cursar si libera créditos, así que se muestra en "Disponibles".
+      const limitadaPorCreditos = materia.prerrequisitoCumplido === true &&
+        (materia.motivo === 'LIMITE_CREDITOS_EXCEDIDO' ||
+         materia.motivo === 'LIMITE_SIGUIENTE_SEMESTRE_EXCEDIDO');
+      const disponible = esSugerida || limitadaPorCreditos;
+      const tbody = disponible ? disponiblesBody : bloqueadasBody;
+      if (disponible) disponibles++; else noDisponibles++;
+
       const fila = document.createElement('tr');
       fila.setAttribute('data-codigo', materia.codigo);
       fila.setAttribute('data-estado', materia.estado);
       if (materia.id != null) fila.setAttribute('data-id', materia.id);
-      if (bloqueada) {
+
+      if (!disponible) {
         fila.className = 'text-muted';
         fila.setAttribute('aria-disabled', 'true');
       }
 
-      // Casilla visible para elegir qué materias inscribir (las bloqueadas no se pueden marcar).
       const tdSeleccion = document.createElement('td');
       tdSeleccion.className = 'col-seleccion';
-      if (!bloqueada) {
+      if (disponible) {
         const label = document.createElement('label');
         label.className = 'materia-toggle';
         label.setAttribute('title', 'Desmarcar para no inscribir');
@@ -308,7 +334,7 @@ const UIManager = {
         const check = document.createElement('input');
         check.type = 'checkbox';
         check.className = 'materia-check';
-        check.checked = true;
+        check.checked = esSugerida;
         check.setAttribute('aria-label', `Incluir ${materia.codigo}`);
         check.setAttribute('data-codigo', materia.codigo);
         if (materia.id != null) check.setAttribute('data-id', materia.id);
@@ -333,10 +359,13 @@ const UIManager = {
       fila.appendChild(this._celda(materia.creditos));
       fila.appendChild(this._celda(materia.semestre));
       fila.appendChild(this._celdaCupos(materia));
-      fila.appendChild(this._celdaEstado(materia));
+      fila.appendChild(this._celdaEstado(materia, disponible));
 
       tbody.appendChild(fila);
     });
+
+    if (disponibles === 0) this._filaVacia(disponiblesBody, 'No hay materias disponibles.');
+    if (noDisponibles === 0) this._filaVacia(bloqueadasBody, 'No hay materias bloqueadas.');
   },
 
   _celda(valor) {
@@ -359,11 +388,11 @@ const UIManager = {
   },
 
   /* Badge de estado + (si está bloqueada) motivo en español. */
-  _celdaEstado(materia) {
+  _celdaEstado(materia, disponible = materia.estado === 'Sugerida') {
     const td = document.createElement('td');
     const badge = document.createElement('span');
-    badge.className = materia.estado === 'Sugerida' ? 'badge badge-success' : 'badge badge-warning';
-    badge.textContent = materia.estado;
+    badge.className = disponible ? 'badge badge-success' : 'badge badge-warning';
+    badge.textContent = materia.estado === 'Sugerida' ? 'Sugerida' : (disponible ? 'Disponible' : materia.estado);
     td.appendChild(badge);
 
     if (materia.motivo) {
@@ -379,13 +408,13 @@ const UIManager = {
 
   /* ---------- Violaciones del 422 (por fila) ---------- */
   limpiarViolaciones() {
-    const tbody = this.el.tablaBody;
-    if (!tbody) return;
-    tbody.querySelectorAll('tr.danger').forEach(fila => {
-      fila.classList.remove('danger');
-      fila.removeAttribute('title');
+    this._tbodies().forEach(tbody => {
+      tbody.querySelectorAll('tr.danger').forEach(fila => {
+        fila.classList.remove('danger');
+        fila.removeAttribute('title');
+      });
+      tbody.querySelectorAll('.violacion, .badge-violacion').forEach(nodo => nodo.remove());
     });
-    tbody.querySelectorAll('.violacion, .badge-violacion').forEach(nodo => nodo.remove());
   },
 
   /**
@@ -393,19 +422,19 @@ const UIManager = {
    * @returns {Array} violaciones sin fila asociada.
    */
   renderViolaciones(violations) {
-    const tbody = this.el.tablaBody;
     const sinFila = [];
     const lista = Array.isArray(violations) ? violations : [];
+    const tbodies = this._tbodies();
 
     const porFila = new Map();
     lista.forEach(v => {
       let fila = null;
-      if (tbody && v.materiaCodigo != null) {
-        fila = Array.from(tbody.querySelectorAll('tr[data-codigo]'))
+      if (v.materiaCodigo != null) {
+        fila = tbodies.flatMap(t => Array.from(t.querySelectorAll('tr[data-codigo]')))
           .find(f => f.getAttribute('data-codigo') === String(v.materiaCodigo)) || null;
       }
-      if (!fila && tbody && v.materiaId != null) {
-        fila = Array.from(tbody.querySelectorAll('tr[data-id]'))
+      if (!fila && v.materiaId != null) {
+        fila = tbodies.flatMap(t => Array.from(t.querySelectorAll('tr[data-id]')))
           .find(f => f.getAttribute('data-id') === String(v.materiaId)) || null;
       }
       if (!fila) { sinFila.push(v); return; }
@@ -463,7 +492,7 @@ const UIManager = {
   /** Pre-marca solo las materias propuestas por la IA (no inscribe nada). */
   aplicarPropuesta(ids) {
     const set = new Set((ids || []).map(String));
-    document.querySelectorAll('#tabla-materias-body .materia-check').forEach(check => {
+    document.querySelectorAll('#tabla-disponibles-body .materia-check').forEach(check => {
       const key = check.getAttribute('data-id') || check.getAttribute('data-codigo');
       check.checked = set.has(String(key));
     });
@@ -736,12 +765,11 @@ const App = {
     UIManager.renderInscritas(resultado.body);
   },
 
-  /** Materias marcadas en la tabla (solo las Sugerida tienen checkbox habilitado). */
+  /** Materias marcadas en la tabla de disponibles. */
   _seleccionadas() {
-    const checks = Array.from(document.querySelectorAll('#tabla-materias-body .materia-check:checked'));
+    const checks = Array.from(document.querySelectorAll('#tabla-disponibles-body .materia-check:checked'));
     const claves = new Set(checks.map(c => c.getAttribute('data-id') || c.getAttribute('data-codigo')));
-    return this.materiasActuales.filter(m =>
-      m.estado === 'Sugerida' && claves.has(String(m.id ?? m.codigo)));
+    return this.materiasActuales.filter(m => claves.has(String(m.id ?? m.codigo)));
   },
 
   _haySeleccionadas() {
@@ -750,7 +778,7 @@ const App = {
 
   /** Recalcula créditos seleccionados, estilos de fila y botones. */
   actualizarSeleccion() {
-    const checks = Array.from(document.querySelectorAll('#tabla-materias-body .materia-check:not(:disabled)'));
+    const checks = Array.from(document.querySelectorAll('#tabla-disponibles-body .materia-check:not(:disabled)'));
     checks.forEach(check => {
       const fila = check.closest('tr');
       if (fila) fila.classList.toggle('materia-excluida', !check.checked);
@@ -786,7 +814,7 @@ const App = {
     this.materiasActuales = Array.isArray(data.materiasSugeridas) ? data.materiasSugeridas : [];
 
     UIManager.renderPerfil(data);                    // #user-nombre / #user-programa
-    UIManager.renderMaterias(this.materiasActuales); // #tabla-materias-body
+    UIManager.renderMaterias(this.materiasActuales); // disponibles + no disponibles
     UIManager.renderTotalCreditos(data.totalCreditos, this.materiasActuales); // #total-creditos
     UIManager.renderLimiteCreditos(data.limiteCreditos, data.promedio);
     if (data.notificaciones) UIManager.renderNotificaciones(data.notificaciones);
@@ -807,8 +835,8 @@ const App = {
       });
     }
 
-    if (UIManager.el.tablaBody) {
-      UIManager.el.tablaBody.addEventListener('change', evento => {
+    if (UIManager.el.tablaDisponiblesBody) {
+      UIManager.el.tablaDisponiblesBody.addEventListener('change', evento => {
         if (evento.target && evento.target.classList.contains('materia-check')) {
           this.actualizarSeleccion();
         }

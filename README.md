@@ -169,7 +169,7 @@ Si el destino está caído, el proxy responde `502 application/problem+json` (`P
 
 ### Qué deberías ver
 
-Tras iniciar sesión, `sugerencia-matricula.html` muestra a Laura con **12 filas**: **6 Sugeridas** (verde, 18 créditos), **2 bloqueadas por el límite de créditos** (603701 y 603703) y **4 bloqueadas por prerrequisito**. Abajo aparece la tabla de **materias inscritas** del período.
+Tras iniciar sesión, `sugerencia-matricula.html` muestra dos tablas: **Disponibles** (6 sugeridas + 603701/603703 que solo están limitadas por créditos y se pueden marcar si liberás cupo) y **No disponibles** (4 bloqueadas por prerrequisito). Abajo aparecen **Materias inscritas** y el **Asistente de IA**.
 
 El límite es **18 créditos**, o **20** cuando el promedio histórico es **4.0 o más**. La sugerencia evalúa primero las materias adeudadas más antiguas y descarta las que se cruzan en horario.
 

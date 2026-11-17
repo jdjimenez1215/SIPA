@@ -147,7 +147,7 @@ Con la base limpia y los tres servicios arriba:
 | # | Paso | Qué tenés que ver |
 |---|---|---|
 | 1 | Abrí http://localhost:5500 e ingresá con `admin` / `Admin123*` | Entrás al panel |
-| 2 | Abrí **Sugerencia de matrícula** | Laura, **18 créditos**, 6 materias *Sugerida*; 603701 y 603703 bloqueadas por límite de créditos; 4 bloqueadas por prerrequisito |
+| 2 | Abrí **Sugerencia de matrícula** | Laura, **18 créditos**: tabla **Disponibles** con 6 sugeridas + 603701/603703 (solo limitadas por créditos, seleccionables); tabla **No disponibles** con 4 por prerrequisito |
 | 3 | Desmarcá una materia y tocá **Confirmar** | Bajan los “Créditos seleccionados” y la alerta verde indica cuántas se inscribieron. La tabla se recarga sin esas materias y aparece **Materias inscritas** con el total de créditos. Cada fila muestra sus **cupos disponibles** |
 | 4 | En **Materias inscritas** tocá **Cancelar** en una fila | Pide confirmación, desaparece de inscritas, vuelve a la sugerencia y el cupo se libera |
 | 5 | Resetea la base. Cargá la página **y después** inscribí 603601 por fuera:<br>`curl -X POST http://localhost:8081/api/inscripciones -H 'Content-Type: application/json' -d '{"estudianteId":1,"periodo":"2026-2","codigosMaterias":["603601"]}'`<br>Ahora tocá **Confirmar** | La fila 603601 se marca en rojo con el mensaje de la API (`MATERIA_YA_INSCRITA`) y aparece la alerta "No se inscribió ninguna asignatura". La inscripción es **todo o nada** |

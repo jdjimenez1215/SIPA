@@ -18,7 +18,8 @@ const sugerencia = {
   limiteCreditos: 18,
   materiasSugeridas: [
     { id: 27, codigo: '603601', nombre: 'Ingeniería de Software II', creditos: 3, semestre: 6, estado: 'Sugerida', prerrequisitoCumplido: true, cuposDisponibles: 25, cuposMaximos: 30 },
-    { id: 34, codigo: '603704', nombre: 'Sistemas Distribuidos', creditos: 3, semestre: 7, estado: 'Prerrequisito', prerrequisitoCumplido: false, motivo: 'PREREQUISITO_NO_CUMPLIDO', cuposDisponibles: 10, cuposMaximos: 30 }
+    { id: 34, codigo: '603704', nombre: 'Sistemas Distribuidos', creditos: 3, semestre: 7, estado: 'Prerrequisito', prerrequisitoCumplido: false, motivo: 'PREREQUISITO_NO_CUMPLIDO', cuposDisponibles: 10, cuposMaximos: 30 },
+    { id: 37, codigo: '603701', nombre: 'Metodología de Investigación', creditos: 3, semestre: 7, estado: 'Prerrequisito', prerrequisitoCumplido: true, motivo: 'LIMITE_CREDITOS_EXCEDIDO', cuposDisponibles: 30, cuposMaximos: 30 }
   ],
   notificaciones: []
 };
@@ -67,30 +68,33 @@ test('pinta sugerencia, cupos, inscritas y selección por materia', async () => 
   const dom = await renderPage();
   const { document } = dom.window;
 
-  assert.equal(document.querySelectorAll('#tabla-materias-body tr').length, 2);
+  assert.equal(document.querySelectorAll('#tabla-disponibles-body tr').length, 2);
+  assert.equal(document.querySelectorAll('#tabla-no-disponibles-body tr').length, 1);
   assert.equal(document.querySelector('#tabla-inscritas-body .btn-cancelar-inscripcion').textContent, 'Cancelar');
   assert.equal(document.querySelectorAll('#tabla-inscritas-body .btn-cancelar-inscripcion').length, 2);
   assert.equal(document.getElementById('limite-creditos').textContent, '18');
   assert.equal(document.getElementById('promedio-estudiante').textContent, '3.82');
 
-  const cupos = document.querySelector('#tabla-materias-body tr[data-codigo="603601"] td:nth-child(6)').textContent;
+  const cupos = document.querySelector('#tabla-disponibles-body tr[data-codigo="603601"] td:nth-child(6)').textContent;
   assert.equal(cupos.trim(), '25 / 30');
 
-  const checks = document.querySelectorAll('#tabla-materias-body .materia-check');
-  assert.equal(checks.length, 1, 'solo las materias Sugerida tienen casilla');
+  const checks = document.querySelectorAll('#tabla-disponibles-body .materia-check');
+  assert.equal(checks.length, 2, 'Sugerida y limitadas por créditos tienen casilla');
+  assert.ok(document.querySelector('#tabla-disponibles-body tr[data-codigo="603701"] .materia-check'));
+  assert.equal(document.querySelector('#tabla-disponibles-body tr[data-codigo="603701"] .badge').textContent, 'Disponible');
   assert.equal(document.getElementById('creditos-seleccionados').textContent, '3');
 
   checks[0].checked = false;
   checks[0].dispatchEvent(new dom.window.Event('change', { bubbles: true }));
   assert.equal(document.getElementById('creditos-seleccionados').textContent, '0');
   assert.equal(document.getElementById('btn-confirmar').disabled, true);
-  assert.ok(document.querySelector('#tabla-materias-body tr[data-codigo="603601"]').classList.contains('materia-excluida'));
+  assert.ok(document.querySelector('#tabla-disponibles-body tr[data-codigo="603601"]').classList.contains('materia-excluida'));
 
   document.getElementById('chat-mensaje').value = '¿qué puedo inscribir?';
   document.getElementById('btn-chat').click();
   await new Promise(resolve => setTimeout(resolve, 50));
   assert.equal(document.getElementById('creditos-seleccionados').textContent, '3');
-  assert.ok(document.querySelector('#tabla-materias-body tr[data-codigo="603601"] .materia-check').checked);
+  assert.ok(document.querySelector('#tabla-disponibles-body tr[data-codigo="603601"] .materia-check').checked);
   assert.match(document.getElementById('chat-respuesta').textContent, /Te propongo esta materia/);
 
   dom.window.close();
