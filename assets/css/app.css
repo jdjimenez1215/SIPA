@@ -209,3 +209,11 @@ tr.materia-excluida > td:last-child {
 	text-decoration: none;
 	opacity: 1;
 }
+
+/* Horario debajo del nombre de la materia. */
+.horario-materia {
+	display: block;
+	color: #6b7785;
+	font-size: 80%;
+	margin-top: 2px;
+}

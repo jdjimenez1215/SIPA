@@ -355,7 +355,7 @@ const UIManager = {
       fila.appendChild(tdSeleccion);
 
       fila.appendChild(this._celda(materia.codigo));
-      fila.appendChild(this._celda(materia.nombre));
+      fila.appendChild(this._celdaNombre(materia));
       fila.appendChild(this._celda(materia.creditos));
       fila.appendChild(this._celda(materia.semestre));
       fila.appendChild(this._celdaCupos(materia));
@@ -371,6 +371,25 @@ const UIManager = {
   _celda(valor) {
     const td = document.createElement('td');
     td.textContent = valor;
+    return td;
+  },
+
+  _celdaNombre(materia) {
+    const td = document.createElement('td');
+    const nombre = document.createElement('span');
+    nombre.textContent = materia.nombre;
+    td.appendChild(nombre);
+
+    const horarios = Array.isArray(materia.horarios) ? materia.horarios : [];
+    if (horarios.length > 0) {
+      const dias = { Lunes: 'Lun', Martes: 'Mar', Miercoles: 'Mié', Miércoles: 'Mié', Jueves: 'Jue', Viernes: 'Vie', Sabado: 'Sáb', Sábado: 'Sáb', Domingo: 'Dom' };
+      const small = document.createElement('small');
+      small.className = 'horario-materia';
+      small.textContent = horarios
+        .map(h => `${dias[h.diaSemana] || h.diaSemana} ${h.horaInicio}-${h.horaFin}`)
+        .join(' · ');
+      td.appendChild(small);
+    }
     return td;
   },
 

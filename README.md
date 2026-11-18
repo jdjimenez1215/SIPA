@@ -182,7 +182,7 @@ Al final hay un **Asistente de matrícula (IA)**: entrá como `laura`, preguntá
 ### Verificación
 
 ```bash
-# Tests unitarios (147 ms + 30 identity + 7 asistente), sin Docker
+# Tests unitarios (147 ms + 30 identity + 8 asistente), sin Docker
 dotnet test backend/ms-inscripcion/tests/MsInscripcion.UnitTests
 dotnet test backend/mini-identity-api-dotnet/src/MiniIdentityApi.Tests
 dotnet test backend/ms-asistente/tests/MsAsistente.Tests

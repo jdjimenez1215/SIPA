@@ -52,4 +52,4 @@ ASISTENTE_MODEL=openai/gpt-oss-20b
 dotnet test backend/ms-asistente/tests/MsAsistente.Tests
 ```
 
-Cubren propuesta válida, descarte de IDs inválidos, límite de créditos, explicaciones, exclusión por días (no lunes/miércoles/viernes) y fallback cuando el LLM falla.
+Cubren propuesta válida, descarte de IDs inválidos, límite de créditos, explicaciones, exclusión por días (no lunes/miércoles/viernes) y fallback cuando el LLM falla. También valida preferencias de días y “solo después de las 10:00”.

@@ -17,7 +17,7 @@ const sugerencia = {
   promedio: 3.82,
   limiteCreditos: 18,
   materiasSugeridas: [
-    { id: 27, codigo: '603601', nombre: 'Ingeniería de Software II', creditos: 3, semestre: 6, estado: 'Sugerida', prerrequisitoCumplido: true, cuposDisponibles: 25, cuposMaximos: 30 },
+    { id: 27, codigo: '603601', nombre: 'Ingeniería de Software II', creditos: 3, semestre: 6, estado: 'Sugerida', prerrequisitoCumplido: true, cuposDisponibles: 25, cuposMaximos: 30, horarios: [{ diaSemana: 'Lunes', horaInicio: '14:00', horaFin: '16:00' }] },
     { id: 34, codigo: '603704', nombre: 'Sistemas Distribuidos', creditos: 3, semestre: 7, estado: 'Prerrequisito', prerrequisitoCumplido: false, motivo: 'PREREQUISITO_NO_CUMPLIDO', cuposDisponibles: 10, cuposMaximos: 30 },
     { id: 37, codigo: '603701', nombre: 'Metodología de Investigación', creditos: 3, semestre: 7, estado: 'Prerrequisito', prerrequisitoCumplido: true, motivo: 'LIMITE_CREDITOS_EXCEDIDO', cuposDisponibles: 30, cuposMaximos: 30 }
   ],
@@ -77,6 +77,7 @@ test('pinta sugerencia, cupos, inscritas y selección por materia', async () => 
 
   const cupos = document.querySelector('#tabla-disponibles-body tr[data-codigo="603601"] td:nth-child(6)').textContent;
   assert.equal(cupos.trim(), '25 / 30');
+  assert.match(document.querySelector('#tabla-disponibles-body tr[data-codigo="603601"] .horario-materia').textContent, /Lun 14:00-16:00/);
 
   const checks = document.querySelectorAll('#tabla-disponibles-body .materia-check');
   assert.equal(checks.length, 2, 'Sugerida y limitadas por créditos tienen casilla');

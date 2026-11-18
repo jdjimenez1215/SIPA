@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace MsAsistente.Api;
 
@@ -14,19 +15,34 @@ public sealed class AsistenteService(IAsistenteLlm llm, ILogger<AsistenteService
             .Where(m => !string.Equals(m.Estado, "Sugerida", StringComparison.OrdinalIgnoreCase))
             .ToList();
 
-        var (sugeridasFiltradas, diasExcluidos) = FiltrarPorDias(sugeridas, mensaje);
-        var notaDias = diasExcluidos.Count > 0
-            ? $" Excluí {string.Join(", ", diasExcluidos)} según tu preferencia."
-            : string.Empty;
+        var (sugeridasPorDia, diasExcluidos) = FiltrarPorDias(sugeridas, mensaje);
+        var (sugeridasFiltradas, horaMinima) = FiltrarPorHora(sugeridasPorDia, mensaje);
+        var notas = new List<string>();
+        if (diasExcluidos.Count > 0)
+        {
+            var porDia = sugeridas.Count - sugeridasPorDia.Count;
+            notas.Add(porDia > 0
+                ? $"Excluí {porDia} materia(s) con clase en {string.Join(", ", diasExcluidos)}."
+                : $"Ninguna materia sugerida tiene clase en {string.Join(", ", diasExcluidos)}.");
+        }
+        if (horaMinima is not null)
+        {
+            var porHora = sugeridasPorDia.Count - sugeridasFiltradas.Count;
+            var hora = horaMinima.Value.ToString("HH:mm");
+            notas.Add(porHora > 0
+                ? $"Excluí {porHora} materia(s) que empiezan antes de las {hora}."
+                : $"Todas las materias sugeridas ya empiezan a las {hora} o después.");
+        }
+        var notaPreferencias = notas.Count > 0 ? " " + string.Join(" ", notas) : string.Empty;
 
         var explicaciones = bloqueadas
             .Select(m => new ExplicacionDto(m.Codigo, m.Motivo ?? "BLOQUEADA", Explicar(m)))
             .ToList();
 
-        if (sugeridasFiltradas.Count == 0 && diasExcluidos.Count > 0)
+        if (sugeridasFiltradas.Count == 0 && (diasExcluidos.Count > 0 || horaMinima is not null))
         {
             return new AsistenteRespuesta(
-                "Con los días que pediste no quedan materias sugeridas que puedas inscribir." + notaDias,
+                "Con las preferencias de días/horario que pediste no quedan materias sugeridas que puedas inscribir." + notaPreferencias,
                 [], explicaciones, false, sugerencia.LimiteCreditos);
         }
 
@@ -64,7 +80,7 @@ public sealed class AsistenteService(IAsistenteLlm llm, ILogger<AsistenteService
         var texto = string.IsNullOrWhiteSpace(propuesta.Mensaje)
             ? "Revisá las materias propuestas y confirmá la matrícula."
             : propuesta.Mensaje;
-        texto += notaDias;
+        texto += notaPreferencias;
 
         return new AsistenteRespuesta(texto, ids, explicaciones, fallback, sugerencia.LimiteCreditos);
     }
@@ -119,6 +135,40 @@ public sealed class AsistenteService(IAsistenteLlm llm, ILogger<AsistenteService
 
         var labels = DayNames.Where(d => excluded.Contains(d.Key)).Select(d => d.Label).ToList();
         return (filtered, labels);
+    }
+
+    /// <summary>If the student says "solo después de las 10" / "no antes de las 10", drop subjects starting earlier.</summary>
+    private static (List<MateriaSugerida> Materias, TimeOnly? HoraMinima) FiltrarPorHora(
+        IReadOnlyList<MateriaSugerida> sugeridas, string mensaje)
+    {
+        var normalized = Normalize(mensaje ?? string.Empty);
+        var match = Regex.Match(normalized,
+            @"(?:despues de las|desde las|a partir de las|no antes de las|no quiero antes de las)\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm)?");
+
+        TimeOnly? min = null;
+        if (match.Success && int.TryParse(match.Groups[1].Value, out var hour))
+        {
+            var minute = int.TryParse(match.Groups[2].Value, out var m) ? m : 0;
+            var suffix = match.Groups[3].Value;
+            if (suffix == "pm" && hour < 12) hour += 12;
+            if (suffix == "am" && hour == 12) hour = 0;
+            if (hour is >= 0 and <= 23 && minute is >= 0 and <= 59)
+                min = new TimeOnly(hour, minute);
+        }
+        else if (normalized.Contains("temprano"))
+        {
+            min = new TimeOnly(10, 0);
+        }
+
+        if (min is null)
+            return (sugeridas.ToList(), null);
+
+        var filtered = sugeridas
+            .Where(m => (m.Horarios ?? []).All(h =>
+                !TimeOnly.TryParse(h.HoraInicio, out var start) || start >= min.Value))
+            .ToList();
+
+        return (filtered, min);
     }
 
     private static string Normalize(string value)

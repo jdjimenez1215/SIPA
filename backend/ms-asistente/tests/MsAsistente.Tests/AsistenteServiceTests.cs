@@ -94,7 +94,23 @@ public class AsistenteServiceTests
         var result = await service.ResponderAsync(sugerencia, "no quiero estudiar los lunes", default);
 
         result.MateriaIds.Should().Equal(2);
-        result.Mensaje.Should().Contain("Excluí Lunes");
+        result.Mensaje.Should().Contain("con clase en Lunes");
+    }
+
+    [Fact]
+    public async Task ExcludesSubjectsThatStartBeforeRequestedTime()
+    {
+        var service = new AsistenteService(
+            new FakeLlm(() => new LlmPropuesta("Listo", [1, 2])), NullLogger<AsistenteService>.Instance);
+        var early = new MateriaSugerida(1, "M1", "Temprana", 3, 6, "Sugerida", true, null, 30, 30,
+            [new HorarioDto("Lunes", "07:00", "09:00")]);
+        var late = new MateriaSugerida(2, "M2", "Tarde", 3, 6, "Sugerida", true, null, 30, 30,
+            [new HorarioDto("Lunes", "14:00", "16:00")]);
+
+        var result = await service.ResponderAsync(Sugerencia(early, late), "solo después de las 10am", default);
+
+        result.MateriaIds.Should().Equal(2);
+        result.Mensaje.Should().Contain("10:00");
     }
 
     [Fact]
